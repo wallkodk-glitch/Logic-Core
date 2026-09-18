@@ -1,0 +1,17 @@
+{
+  "id": "./",
+  "name": "Logic Core",
+  "short_name": "Logic Core",
+  "description": "Dit mobile rum til projekter, beslutninger og idéer.",
+  "lang": "da",
+  "start_url": "./#/",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b1014",
+  "theme_color": "#0b1014",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

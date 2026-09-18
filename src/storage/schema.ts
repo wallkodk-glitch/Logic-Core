@@ -1,0 +1,63 @@
+import { ACTIVITY_TYPES, PROJECT_STATUSES } from '../domain/types.ts';
+import type { Activity, AppData, Project } from '../domain/types.ts';
+
+export const SCHEMA_VERSION = 1;
+export const ACTIVITY_LIMIT = 300;
+export const emptyData = (): AppData => ({ schemaVersion: SCHEMA_VERSION, revision: 0, projects: [], activity: [] });
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isDate(value: unknown): value is string {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) && Number.isFinite(Date.parse(value));
+}
+
+function isId(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0 && value.length <= 128;
+}
+
+function isProject(value: unknown): value is Project {
+  return isRecord(value) && isId(value.id) && typeof value.title === 'string' &&
+    value.title.trim().length > 0 && value.title.length <= 120 &&
+    typeof value.description === 'string' && value.description.length <= 10000 &&
+    PROJECT_STATUSES.some(status => status === value.status) &&
+    isDate(value.createdAt) && isDate(value.updatedAt) && value.updatedAt >= value.createdAt;
+}
+
+function isActivity(value: unknown): value is Activity {
+  return isRecord(value) && isId(value.id) && ACTIVITY_TYPES.some(type => type === value.type) &&
+    typeof value.text === 'string' && value.text.length <= 4000 && isDate(value.createdAt) &&
+    (value.projectId === undefined || isId(value.projectId));
+}
+
+function uniqueIds(items: { id: string }[]): boolean {
+  return new Set(items.map(item => item.id)).size === items.length;
+}
+
+export function validateData(value: unknown): AppData {
+  if (!isRecord(value) || value.schemaVersion !== SCHEMA_VERSION ||
+    !Number.isSafeInteger(value.revision) || Number(value.revision) < 0 ||
+    !Array.isArray(value.projects) || !value.projects.every(isProject) || !uniqueIds(value.projects) ||
+    !Array.isArray(value.activity) || !value.activity.every(isActivity) || !uniqueIds(value.activity)) {
+    throw new Error('De gemte data har et ugyldigt format. Eksportér dem fra Diagnostics før gendannelse. Intet er overskrevet.');
+  }
+  return value as unknown as AppData;
+}
+
+// v1 is the first persisted schema. Add explicit v1 → v2 → … migrations here;
+// never silently treat unknown, corrupt or newer schemas as an empty database.
+export function migrateData(value: unknown): AppData {
+  if (isRecord(value) && typeof value.schemaVersion === 'number' && value.schemaVersion > SCHEMA_VERSION) {
+    throw new Error('Disse data kommer fra en nyere Logic Core. Opdatér appen. Dine data er bevaret.');
+  }
+  return validateData(value);
+}
+
+export function parseData(raw: string | null): AppData {
+  if (raw === null) return emptyData();
+  let parsed: unknown;
+  try { parsed = JSON.parse(raw); }
+  catch { throw new Error('De gemte data kunne ikke læses. Eksportér en kopi i Diagnostics. Intet er overskrevet.'); }
+  return migrateData(parsed);
+}
