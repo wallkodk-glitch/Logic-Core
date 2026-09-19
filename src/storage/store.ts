@@ -1,6 +1,10 @@
 import type { Activity, AppData, Project, ProjectInput, Result } from '../domain/types.ts';
 import { PROJECT_STATUSES } from '../domain/types.ts';
 import { ACTIVITY_LIMIT, emptyData, parseData, validateData } from './schema.ts';
+import { parseBackup, serializeBackup } from './backup.ts';
+import type { PreparedRestore } from './backup.ts';
+import { parseRecovery, resolveRecovery, settleRecovery, writeRaw } from './recovery.ts';
+import type { RecoveryRecord, RecoveryStatus } from './recovery.ts';
 
 export interface StoragePort {
   getItem(key: string): string | null;
@@ -36,10 +40,12 @@ export class AppStore {
   private loadBlocked = false;
   private readonly storage: () => StoragePort;
   readonly key: string;
+  readonly recoveryKey: string;
 
   constructor(storage: () => StoragePort, key: string) {
     this.storage = storage;
     this.key = key;
+    this.recoveryKey = `${key}:recovery`;
     this.refresh();
   }
 
@@ -56,6 +62,7 @@ export class AppStore {
 
   refresh = (): void => {
     try {
+      settleRecovery(this.storage(), this.key, this.recoveryKey);
       const raw = this.storage().getItem(this.key);
       const data = parseData(raw);
       this.raw = raw;
@@ -71,6 +78,7 @@ export class AppStore {
     try {
       if (this.loadBlocked) throw new Error(this.snapshot.error ?? 'Lagringen skal gendannes før ændringer.');
       const port = this.storage();
+      settleRecovery(port, this.key, this.recoveryKey);
       if (port.getItem(this.key) !== this.raw) {
         this.refresh();
         throw new Error('Data er ændret i et andet vindue. Kontrollér projektet, og prøv igen.');
@@ -166,14 +174,111 @@ export class AppStore {
 
   exportData(appVersion: string): Result<string> {
     try {
-      const raw = this.storage().getItem(this.key);
-      const metadata = { app: 'Logic Core', appVersion, exportedAt: new Date().toISOString(), storageKey: this.key };
-      try {
-        return { ok: true, value: JSON.stringify({ ...metadata, data: parseData(raw) }, null, 2) };
-      } catch {
-        // Preserve corrupt/newer data verbatim so they can be recovered later.
-        return { ok: true, value: JSON.stringify({ ...metadata, recovery: true, rawData: raw }, null, 2) };
+      return { ok: true, value: serializeBackup(this.storage().getItem(this.key), appVersion, this.key) };
+    } catch (error) { return { ok: false, error: message(error) }; }
+  }
+
+  prepareImport(source: string): Result<PreparedRestore> {
+    try {
+      const { preview } = parseBackup(source); // Validate before even reading recovery.
+      const port = this.storage();
+      return { ok: true, value: { source, preview, primaryAtPreview: port.getItem(this.key), recoveryAtPreview: port.getItem(this.recoveryKey) } };
+    } catch (error) { return { ok: false, error: message(error) }; }
+  }
+
+  recoveryStatus(): RecoveryStatus {
+    let token: string | null = null;
+    try {
+      const port = this.storage();
+      token = port.getItem(this.recoveryKey);
+      const record = parseRecovery(token);
+      return { exists: record.snapshot !== null || !!record.pending, token, snapshot: resolveRecovery(record, port.getItem(this.key)), pending: !!record.pending, error: null };
+    } catch (error) { return { exists: token !== null, token, snapshot: null, pending: false, error: message(error) }; }
+  }
+
+  prepareRecovery(): Result<PreparedRestore> {
+    try {
+      const status = this.recoveryStatus();
+      if (status.error) throw new Error(status.error);
+      if (!status.snapshot) throw new Error('Der findes endnu ikke et recovery-snapshot.');
+      // Invalid old primary bytes may be exported, but never restored as data.
+      parseData(status.snapshot.rawPrimary);
+      return this.prepareImport(serializeBackup(status.snapshot.rawPrimary, status.snapshot.appVersion, this.key));
+    } catch (error) { return { ok: false, error: message(error) }; }
+  }
+
+  restoreBackup(prepared: PreparedRestore, appVersion: string): Result<{ warning: string | null }> {
+    let next: AppData;
+    let after: string;
+    let port: StoragePort;
+    let recoveryBefore: string | null;
+    try {
+      // Revalidate the source at the write boundary; preview objects are not trusted.
+      next = parseBackup(prepared.source).data;
+      after = JSON.stringify(next);
+      port = this.storage();
+      if (port.getItem(this.key) !== prepared.primaryAtPreview || port.getItem(this.recoveryKey) !== prepared.recoveryAtPreview) {
+        throw new Error('Data eller recovery er ændret siden forhåndsvisningen. Vælg backup igen.');
       }
+      if (prepared.primaryAtPreview === after) throw new Error('Backup matcher allerede dine data. Intet er ændret.');
+      recoveryBefore = port.getItem(this.recoveryKey);
+      const record = parseRecovery(recoveryBefore);
+      if (record.pending) throw new Error('Afslut den tidligere recovery-handling ved at genåbne appen før en ny gendannelse.');
+      const journal: RecoveryRecord = {
+        recoveryVersion: 1, snapshot: record.snapshot,
+        pending: { before: prepared.primaryAtPreview, after, candidate: { rawPrimary: prepared.primaryAtPreview, savedAt: new Date().toISOString(), appVersion } },
+      };
+      // Two localStorage keys cannot form one transaction. Keep the old snapshot
+      // inside a journal until the atomic primary write decides which snapshot wins.
+      const journalRaw = JSON.stringify(journal);
+      parseRecovery(journalRaw);
+      port.setItem(this.recoveryKey, journalRaw);
+      try {
+        if (port.getItem(this.recoveryKey) !== journalRaw || port.getItem(this.key) !== prepared.primaryAtPreview) throw new Error('Data ændrede sig under gendannelsen. Ingen primary-write blev udført.');
+        port.setItem(this.key, after); // Commit point: the entire validated document.
+      } catch (error) {
+        try { writeRaw(port, this.recoveryKey, recoveryBefore); }
+        catch {
+          this.loadBlocked = true;
+          throw new Error(`${message(error)} Den tidligere recovery er bevaret i journalen; genåbn appen for at afslutte oprydning.`);
+        }
+        throw error;
+      }
+    } catch (error) {
+      const detail = message(error);
+      this.publish(this.snapshot.data, detail);
+      return { ok: false, error: detail };
+    }
+    // Beyond this point the restore succeeded. A cleanup failure must not be
+    // reported as a failed import: preserve the journal and block later writes.
+    let warning: string | null = null;
+    try { settleRecovery(port, this.key, this.recoveryKey); }
+    catch { warning = 'Data er gendannet, og recovery er bevaret i journalen. Genåbn appen for at afslutte oprydning før flere ændringer.'; }
+    this.raw = after;
+    this.loadBlocked = warning !== null;
+    this.publish(next, warning);
+    return { ok: true, value: { warning } };
+  }
+
+  exportRecovery(appVersion: string): Result<string> {
+    try {
+      const status = this.recoveryStatus();
+      if (!status.exists) throw new Error('Der findes ikke et recovery-snapshot.');
+      if (status.error || status.pending) {
+        return { ok: true, value: JSON.stringify({ app: 'Logic Core', appVersion, exportedAt: new Date().toISOString(), recoveryJournal: status.token }, null, 2) };
+      }
+      if (!status.snapshot) throw new Error('Recovery-snapshot er tomt.');
+      return { ok: true, value: serializeBackup(status.snapshot.rawPrimary, status.snapshot.appVersion, this.key) };
+    } catch (error) { return { ok: false, error: message(error) }; }
+  }
+
+  deleteRecovery(expectedToken: string): Result<void> {
+    try {
+      const port = this.storage();
+      if (port.getItem(this.recoveryKey) !== expectedToken) throw new Error('Recovery er ændret. Kontrollér det igen før sletning.');
+      port.removeItem(this.recoveryKey);
+      this.refresh();
+      return { ok: true, value: undefined };
     } catch (error) { return { ok: false, error: message(error) }; }
   }
 }

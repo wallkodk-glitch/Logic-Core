@@ -151,6 +151,19 @@ dd { margin: 0; text-align: right; }
 .steps li { padding-left: 4px; margin-block: 12px; }
 .settings-details { margin-block: 20px 24px; }
 .export-control { margin-top: 22px; }
+.data-block { border-top: 1px solid var(--line); padding-top: 24px; margin-top: 28px; }
+.data-block > p { margin-top: 10px; }
+.file-label { display: block; margin-block: 18px 10px; font-size: 14px; }
+.backup-file { display: block; width: 100%; min-width: 0; min-height: 48px; color: var(--muted); }
+.backup-file::file-selector-button { min-height: 48px; padding: 12px; border: 1px solid #30414c; border-radius: 10px; background: #152026; color: #d8e3e8; margin-right: 10px; font: inherit; }
+.backup-preview { border: 1px solid #ffb1a94a; background: #ffb1a908; border-radius: 12px; padding: 18px; margin-top: 22px; }
+.backup-preview p { font-size: 14px; }
+.backup-preview dl > div { flex-wrap: wrap; }
+.confirmation { display: flex; gap: 12px; align-items: center; min-height: 48px; margin-top: 16px; font-size: 14px; line-height: 1.6; cursor: pointer; }
+.confirmation input { width: 24px; height: 24px; flex: 0 0 24px; accent-color: var(--accent); }
+.data-actions { display: flex; flex-direction: column; align-items: stretch; gap: 12px; margin-top: 20px; }
+.data-actions .export-control { margin: 0; }
+.data-actions .button { width: 100%; }
 .notice { border: 1px solid #40534b; border-radius: 12px; background: #b2fac808; padding: 16px; font-size: 14px; line-height: 1.6; margin-bottom: 24px; }
 .notice.error { border-color: #ffb1a94a; background: #ffb1a908; color: var(--danger); }
 .notice p { margin-top: 7px; }

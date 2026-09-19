@@ -9,7 +9,7 @@ const StoreContext = createContext(store);
 export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
-      if (event.key === store.key || event.key === null) store.refresh();
+      if (event.key === store.key || event.key === store.recoveryKey || event.key === null) store.refresh();
     };
     const onVisible = () => { if (document.visibilityState === 'visible') store.refresh(); };
     window.addEventListener('storage', onStorage);

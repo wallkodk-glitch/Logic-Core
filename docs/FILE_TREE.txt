@@ -1,9 +1,13 @@
-Logic Core v0.1 — repository files
+LOGIC CORE v0.1.1 — FILE TREE
+
+Komplet source-snapshot (filer i archive root):
 
 .github/workflows/deploy.yml
+.github/workflows/mobile-release.yml
 .gitignore
 README.md
 docs/FILE_TREE.txt
+docs/FOUNDATION_LOCK.md
 docs/VALIDATION.md
 index.html
 package-lock.json
@@ -16,12 +20,17 @@ public/icons/maskable-512.png
 public/manifest.webmanifest
 scripts/build-pwa.mjs
 scripts/config.mjs
+scripts/generate-mobile-workflow.py
+scripts/mobile-workflow.template.yml
+scripts/mobile_release.py
+scripts/package-release.py
 scripts/sw-template.js
 scripts/verify-build.mjs
 src/app/App.tsx
 src/app/AppShell.tsx
 src/app/router.ts
 src/app/useDevice.ts
+src/components/DataTools.tsx
 src/components/ErrorBoundary.tsx
 src/components/ExportButton.tsx
 src/components/Icon.tsx
@@ -40,13 +49,52 @@ src/pages/ProjectsPage.tsx
 src/pages/SettingsPage.tsx
 src/pwa/diagnostics.ts
 src/pwa/register.ts
+src/storage/backup.ts
 src/storage/context.tsx
+src/storage/recovery.ts
 src/storage/schema.ts
 src/storage/store.ts
 src/styles.css
+src/utils/download.ts
 src/utils/format.ts
+tests/backup.test.ts
 tests/config.test.ts
+tests/fixtures/v0.1-backup.json
+tests/fixtures/v0.1-primary.json
 tests/offline.test.ts
 tests/storage.test.ts
+tests/test_release.py
 tsconfig.json
 vite.config.ts
+
+Ændret/tilføjet siden den accepterede v0.1:
+
+.github/workflows/deploy.yml
+.github/workflows/mobile-release.yml
+.gitignore
+README.md
+docs/FILE_TREE.txt
+docs/FOUNDATION_LOCK.md
+docs/VALIDATION.md
+package-lock.json
+package.json
+scripts/generate-mobile-workflow.py
+scripts/mobile-workflow.template.yml
+scripts/mobile_release.py
+scripts/package-release.py
+src/components/DataTools.tsx
+src/components/ExportButton.tsx
+src/pages/DiagnosticsPage.tsx
+src/pages/SettingsPage.tsx
+src/storage/backup.ts
+src/storage/context.tsx
+src/storage/recovery.ts
+src/storage/schema.ts
+src/storage/store.ts
+src/styles.css
+src/utils/download.ts
+tests/backup.test.ts
+tests/config.test.ts
+tests/fixtures/v0.1-backup.json
+tests/fixtures/v0.1-primary.json
+tests/test_release.py

@@ -6,6 +6,7 @@ import { parseRoute } from '../src/app/router.ts';
 test('Pages base resolves development, repository, user site and custom domain', () => {
   assert.equal(resolveBase({}), '/');
   assert.equal(resolveBase({ GITHUB_REPOSITORY: 'jakob/logic-core' }), '/logic-core/');
+  assert.equal(resolveBase({ GITHUB_REPOSITORY: 'wallkodk-glitch/Logic-Core' }), '/Logic-Core/');
   assert.equal(resolveBase({ GITHUB_REPOSITORY: 'jakob/Jakob.github.io' }), '/');
   assert.equal(resolveBase({ GITHUB_REPOSITORY: 'jakob/logic-core', PAGES_BASE_PATH: '' }), '/');
   assert.equal(resolveBase({ PAGES_BASE_PATH: '/logic-core' }), '/logic-core/');

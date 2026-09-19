@@ -5,3 +5,4 @@ dist/
 *.tsbuildinfo
 .sites-runtime/
 test-results/
+__pycache__/

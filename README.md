@@ -1,122 +1,102 @@
-# Logic Core · Foundation v0.1
+# Logic Core · Foundation v0.1.1
 
-En statisk React + TypeScript + Vite-app til iPhone. Projekter, lokal Command-log,
-versioneret lagring, PWA-app-shell og Diagnostics. Ingen backend, login eller API-nøgler.
+Den accepterede v0.1-app med valideret JSON-restore, lokal recovery og en permanent
+release-pipeline fra iPhone. React / TypeScript / Vite, lokalt schema **1**.
+Ingen backend, login, telemetry, API-nøgler eller cloud-sync.
 
-## Deploy fra iPhone — ingen terminal
+## Engangsinstallation fra v0.1 på iPhone
 
-Du skal bruge **logic-core-v0.1.zip** og indholdet af **deploy.yml** fra leverancen.
-ZIP-filen indeholder hele repositoryet; den skal **ikke** pakkes ud på telefonen.
+Brug det eksisterende repository **wallkodk-glitch/Logic-Core**, branch **main**.
+Gem `logic-core-mobile-release.zip`, `deploy.yml` og `mobile-release.yml` i **Filer**.
+ZIP-filen skal ikke pakkes ud.
 
-1. Gem ZIP-filen i **Filer**. Åbn [GitHub](https://github.com/) i Safari, log ind, og opret et **Public** repository med navnet `logic-core`. Brug branchen `main`. Public fungerer med GitHub Free; kildekoden bliver offentlig, mens appens brugerdata forbliver på enheden.
-2. I repositoryet: **Add file → Upload files → choose your files → Browse / Gennemse**. Vælg `logic-core-v0.1.zip` fra Filer. Upload den i repositoryets **rod**, og commit til `main`. Bevar det præcise filnavn.
-3. Vælg **Add file → Create new file**. Skriv `.github/workflows/deploy.yml` som filnavn. Kopiér **hele** indholdet af den medfølgende `deploy.yml` ind i editoren, og commit til `main`. Det opretter mapperne automatisk. Upload ikke workflow-filen i roden.
-4. Vælg **Settings → Pages → Build and deployment → Source → GitHub Actions**. Hvis Actions er deaktiveret, aktivér dem under **Settings → Actions → General**. Første installation skal have `contents: write`, som allerede står i workflowet.
-5. Vælg **Actions → Deploy Logic Core → Run workflow → main → Run workflow**. Hvis første automatiske kørsel allerede er grøn, behøver du ikke køre igen. Et tidligt rødt run før trin 4 løses ved at køre workflowet igen bagefter.
-6. Vent på grønt **build** og **deploy**. Åbn URL'en under deployment-resultatet eller **Settings → Pages → Visit site**.
-7. Åbn URL'en i **Safari**. Vælg **Del → Føj til hjemmeskærm**. Aktivér **Åbn som webapp**, hvis valget vises. Tryk **Tilføj**, og start fra ikonet.
-8. I appen: **Mere → Diagnostics → Kør checks igen**. Efter online-installationen forventes **8 / 8 PASS**. Følg iPhone-testen nedenfor.
+1. I den nuværende installerede Logic Core: **Indstillinger → Eksportér data som JSON → Gem i Filer**.
+2. I Safari på GitHub: åbn repositoryets **`.github/workflows/`**-mappe. Vælg **Add file → Upload files** og upload begge YAML-filer dér: erstat `deploy.yml`, opret `mobile-release.yml`. Commit til **main**. Vent på grønt **Deploy Logic Core**.
+3. Gå til repositoryets **rod**. **Add file → Upload files → Browse/Gennemse**: vælg præcis `logic-core-mobile-release.zip`, og commit til **main**.
+4. Åbn **Actions → Mobile release Logic Core**. Vent på grønne **build → install → deploy**. Source opdateres, og ZIP-filen fjernes automatisk fra main.
+5. Åbn [Logic Core](https://wallkodk-glitch.github.io/Logic-Core/) eller **Settings → Pages → Visit site**. Åbn online, luk derefter alle Logic Core-vinduer og den installerede app, og start igen fra dit eksisterende hjemmeskærmsikon. Kontrollér **0.1.1** i Diagnostics. Gentag luk/genåbn, hvis en opdatering stadig venter.
+6. Kør iPhone-testen nedenfor. Slet ikke appen eller Safari-data for at opdatere.
 
-Hvis en GitHub-knap ikke vises i mobilvisningen, vælg **Anmod om websted til computer**
-i Safaris sidemenu. Det er stadig Safari på din iPhone.
+Hvis upload-knappen mangler: vælg **Anmod om websted til computer** i Safari.
+YAML-filerne skal ligge i `.github/workflows/`, ikke i roden. Upload begge filer
+uden at ændre deres indhold; release-valideringen kontrollerer dem byte for byte.
 
-Første run pakker ZIP-filen ud, committer kildefilerne til `main` og fjerner den
-midlertidige ZIP-fil fra repositoryets rod. Samme run bygger og deployer appen.
-Derefter bygger og deployer hvert push til `main` automatisk. Workflowet kræver ingen
-personlige tokens eller secrets. Det genererede kildecommit udløser ikke et ekstra run.
+**Hvorfor to workflow-filer denne ene gang?** `GITHUB_TOKEN` med `contents: write`
+kan ikke selv installere workflow-ændringer. Derfor erstattes den gamle bootstrap
+manuelt, og fremtidige ZIP-releases beskytter workflows mod ændring.
+Se [GitHubs dokumentation om workflow-permission](https://docs.github.com/en/rest/repos/contents#create-or-update-file-contents).
 
-Ved **403** i `git push`: se **Settings → Actions → General → Workflow permissions**,
-vælg **Read and write permissions**, og kør workflowet igen. En organisationspolitik
-kan kræve hjælp fra repositoryets administrator.
+Pages er allerede sat til **GitHub Actions**. Ved permissions-fejl: kontrollér
+**Settings → Actions → General → Workflow permissions → Read and write permissions**.
+Kun mobile-workflowets install-job anmoder om source-write. Branch protection eller
+organisationspolitik kan stadig blokere bot-push; et sådant run deployer ikke.
 
-Alternativt kan hele ZIP-indholdet lægges direkte i et repository. `package.json`
-skal ligge i roden, og workflowet skal ligge under `.github/workflows/`.
+## Fremtidig release: én ZIP
 
-Pages-konfigurationen følger [Vites Pages-vejledning](https://vite.dev/guide/static-deploy.html#github-pages)
-og [GitHubs officielle workflow-vejledning](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
+1. Eksportér en backup fra Logic Core.
+2. Upload **`logic-core-mobile-release.zip`** til repositoryets rod, commit til **main**.
+3. Vent på grønt **Mobile release Logic Core**, genåbn appen, og kontrollér den nye version og Diagnostics.
 
-## iPhone-test — afslut foundation-valideringen
+Astra skal levere et komplet root-snapshot med en **højere** app-version og identiske
+beskyttede workflows. Samme/lavere version afvises. Normale app-releases kræver kun
+ZIP-upload. En fremtidig ændring af selve workflows kræver igen en eksplicit manuel
+workflow-upload; løsningen bruger ingen PAT eller ekstra secrets.
 
-- Åbn appen fra hjemmeskærmen. Diagnostics skal vise **Kører som installeret web-app**.
-- Opret projektet `iPhone-test`, vælg **Aktiv**, og gem. Se det under Projekter og Command.
-- Redigér titel, beskrivelse og status. Gem, luk appen helt, og åbn den igen. Kontrollér ændringerne.
-- Skriv og send en Command. Den skal vises i seneste aktivitet efter genåbning.
-- Kontrollér alle hovedområder, herunder Beslutninger, Knowledge, Indstillinger og Diagnostics via Mere.
-- Kør Diagnostics online og igen i flytilstand. Førstegangsbesøget skal være online; vent på service worker PASS, før du lukker appen og tester offline-genåbning.
-- Eksportér JSON fra Diagnostics eller Indstillinger. På iPhone bruges delingsarket, hvis fil-deling understøttes; vælg **Gem i Filer**. Ellers bruges fil-download.
-- Slet testprojektet via **Slet projekt → Slet permanent**. Luk og genåbn, og bekræft at det er væk.
-- Kontrollér portræt, landskab, tastatur, skærmtop/-bund og at ingen side kræver vandret scrolling.
+## iPhone acceptance
 
-## Arkitektur
+- Kontrollér eksisterende projekter og aktiviteter før nye ændringer. **Diagnostics: 0.1.1, schema 1, 8/8 PASS online**.
+- Opret, redigér og slet et testprojekt. Send en Command. Luk/genåbn og kontrollér persistence.
+- Eksportér backup **A** til Filer. Opret derefter testprojekt **B**.
+- Importér A: preview skal vise versionsoplysninger og antal. **Fortryd** først; B skal stadig findes.
+- Importér A igen, sæt bekræftelsesfeltet, og vælg **Gendan og erstat data**. B skal være væk; recovery skal findes.
+- Vælg **Eksportér recovery → Gem i Filer**. Vælg derefter **Gendan tidligere snapshot**, gennemgå preview og bekræft. B skal komme tilbage, også efter luk/genåbn.
+- Importér en anden JSON-fil med forkert struktur, hvis du har en i Filer. Den skal afvises uden dataændring. Automatiske tests dækker også ugyldig JSON og korrupte dokumenter.
+- Slet recovery via den separate bekræftelse. Projekter/aktiviteter skal være bevaret.
+- Kontrollér navigation, portrait/landscape, tastatur og ingen vandret scrolling. Efter service worker PASS: luk og genåbn offline. Online-checket viser forventeligt FAIL i flytilstand.
 
-`AppShell` og en lille hash-router ejer navigationen. Siderne bruger `AppStore`
-via React Context / `useSyncExternalStore`. Store ejer alle reads/writes og gemmer
-et samlet, valideret v1-dokument. `schema.ts` er det ene sted for fremtidige migrationer.
+## Ved et fejlet release-run
 
-| Mappe / fil | Ansvar |
+- **Validering / npm / tests / typecheck / build fejler:** gammel source og live app bevares; den uploadede ZIP bliver i main. Erstat den med en rettet ZIP, eller slet kun ZIP-filen. Slet ikke app-data.
+- **Push fejler:** remote source og ZIP bevares; ingen deployment. Ret den viste permissions-/branch-fejl og kør mobile-workflowet igen på main.
+- **Pages fejler efter install:** den testede source er committed, ZIP er fjernet. Kør **Actions → Deploy Logic Core → Run workflow → main** for at bygge/deploye samme installerede version igen.
+- **main er ændret under runnet:** den forældede release stopper. Se hvilken version der nu ligger i main, før du uploader igen.
+
+## Arkitektur og tekniske checks
+
+Det eksisterende AppShell, hash-navigation, projekt-CRUD og PWA-layout er bevaret.
+`AppStore` ejer storage. `schema.ts` validerer v1; `backup.ts` validerer og serialiserer
+backup; `recovery.ts` beskytter den tidligere rå primary med en lille journal.
+Import-preview og recovery-knapper ligger i `DataTools` under Indstillinger.
+
+| Område | Ansvar |
 | --- | --- |
-| `src/app/` | Shell, navigation, netværks- og tastaturtilstand |
-| `src/pages/` | Command, Projects/editor, modulpladsholdere, Settings, Diagnostics |
-| `src/components/` | Ikoner, projektkort, overskrifter, eksport og Error Boundary |
-| `src/domain/` | Faktiske TypeScript-modeller og status-union |
-| `src/storage/` | Versioneret datalag, validering, write-fejl og React-binding |
-| `src/pwa/` | Service worker-registration, status og Diagnostics |
-| `src/utils/`, `src/config.ts` | Datoformattering og appkonfiguration |
-| `public/` | Manifest, favicon, PNG-ikoner og Apple touch icon |
-| `scripts/` | Pages-base, generering og kontrol af offline-build |
-| `tests/` | Lagring, migration-grænse, navigation, base paths og worker-livscyklus |
-| `.github/workflows/deploy.yml` | Mobil bootstrap, tests, build og Pages-deployment |
+| `src/app`, `src/pages`, `src/components` | Eksisterende app og lokal backup-UI |
+| `src/domain`, `src/storage` | TypeScript-modeller, v1-validering, atomisk primary-write, recovery |
+| `src/pwa`, `public`, `scripts/build-pwa.mjs` | Uændret PWA-fundament og offline-app-shell |
+| `scripts/mobile_release.py` | ZIP-validering, staging, afgrænset source-sync og bot-commit |
+| `.github/workflows/deploy.yml` | Almindelige source-commits; ingen source-write |
+| `.github/workflows/mobile-release.yml` | ZIP-trigger; read-only build, isoleret install, Pages-deploy |
 
-Den fulde filliste ligger i [docs/FILE_TREE.txt](docs/FILE_TREE.txt).
+[Foundation-rapport](docs/FOUNDATION_LOCK.md) · [Præcis validering](docs/VALIDATION.md) · [File tree](docs/FILE_TREE.txt).
 
-## Hvad virker i v0.1?
-
-- Projekt-CRUD med `id`, `title`, `description`, `status`, `createdAt` og `updatedAt`.
-- Statusser: `brainstorm`, `candidate`, `active`, `decided`, `locked`, `archived`.
-- UUID'er, bevaret oprettelsesdato og monotont stigende ændringstid.
-- Command-input gemmer lokalt; aktive projekter og seneste aktivitet på forsiden.
-- Alle krævede områder i navigationen. Beslutninger, Muligheder og Knowledge er tydeligt markeret som planlagte.
-- Dark mobil-layout, safe areas, 48px primære knapper, tastaturhensyn og tastaturnavigation.
-- Standalone-manifest, lokale ikoner, versionsopdelt offline-app-shell og sikker opdateringslivscyklus.
-- Otte PASS/FAIL-checks, JSON-eksport, forståelige lagringsfejl og React-fejlfallback.
-- React er den eneste runtime-afhængighed ud over React DOM. Ingen eksterne fonte eller CDN-assets.
-
-## Engineering og begrænsninger
-
-- Data ligger i `localStorage` under en nøgle med appens base path. Browseren leverer origin-isolation. En ændret URL, browserprofil, privat session eller separat installation kan have et andet datasæt.
-- Lokal lagring er ikke en backup. Rydning af browserdata og lageroprydning kan fjerne data. Eksportér jævnligt. Import/synkronisering er ikke med i v0.1.
-- Data og aktivitet gemmes atomisk i samme JSON-write. Fejl viser ingen falsk gemt-tilstand. Beskadigede og nyere skemaer blokerer writes, og de originale bytes kan eksporteres.
-- Fremtidige migrationer tilføjes eksplicit i `schema.ts`. Ingen fiktiv v0-migration er oprettet, da v1 er det første format.
-- De seneste 300 aktiviteter bevares; projekter beskæres ikke automatisk. De seneste seks aktiviteter vises på Command.
-- “Låst” er en statusmarkør i v0.1, ikke en adgangslås. Sletning kræver bekræftelse og har ingen undo.
-- Projekteditoren bevarer input under et fejlet save. Ikke-gemte felter bevares ikke efter navigation eller lukning.
-- Der er beskyttelse mod forældede editorer og registrerede ændringer fra andre faner. `localStorage` giver ikke fuld isolation af samtidige writes fra flere faner; brug én aktiv editor ad gangen.
-- Offline virker efter et vellykket onlinebesøg med service worker PASS. Første load kræver internet. Cache-versioner slettes kun inden for denne app-scopes namespace.
-- En hentet opdatering aktiveres, når alle appens faner/vinduer er lukket. Gem før lukning. Appen genindlæser ikke automatisk midt i redigering.
-- Diagnostics beviser læsning/skrivning her og nu. Lagring over en faktisk iOS-lukning skal bekræftes med iPhone-testen ovenfor.
-- Bygget til moderne Safari (build target Safari 16.4). Fysisk iPhone/PWA-installation og GitHub-hosted Actions-run er ikke verificeret i leverancemiljøet.
-
-## Udviklerkommandoer — ikke nødvendige på iPhone
-
-Node 24; præcise afhængigheder er låst i `package-lock.json`.
+Build-miljøet bruger **Node 24** og **Python 3** (allerede på Ubuntu GitHub runners).
+Det kræver ingen installationer på Jakobs iPhone. Dependencies er uændrede fra v0.1.
 
 ```sh
-npm ci
+npm ci --no-audit --no-fund
 npm test
 npm run typecheck
-npm run build
-npm run preview
+PAGES_BASE_PATH=/Logic-Core/ npm run build
+python3 -B scripts/package-release.py --output /tmp/logic-core-release
 ```
 
-`npm run dev` starter udviklingsserveren uden service worker.
-`npm run build` typechecker, bygger og verificerer assets, manifest og worker.
-Workflowet henter den faktiske `base_path` fra GitHub Pages, inklusive root-sites
-og custom domains. Lokalt kan `PAGES_BASE_PATH=/logic-core/` bruges til samme test.
-Hash-navigation kræver ingen server-rewrites eller specialiseret 404-side.
+`npm run build` inkluderer typecheck og verifikation af Pages-assets, manifest og worker.
+Workflowet bruger Pages' faktiske `base_path`. Bevar URL/base path for at bevare samme
+storage-key: `logic-core:/Logic-Core/:data`; recovery bruger samme key + `:recovery`.
 
-## Valideringsstatus og v0.2
+Recovery og primary ligger begge lokalt. Safari/iOS kan fjerne lokale data; eksport i
+Filer er den separate backup. Luk andre Logic Core-faner før restore. Importgrænsen
+er 8 MiB, og der er én pre-restore snapshot, ikke en versionshistorik.
 
-Se [docs/VALIDATION.md](docs/VALIDATION.md) for den præcise teststatus.
-
-Efter en bestået iPhone-test anbefales **valideret JSON-import med backup før restore**
-som første v0.2-leverance. Beskyt det lokale arbejde, før de større motorer tilføjes.
+Næste milestone er **Foundation acceptance på fysisk iPhone og én efterfølgende
+ZIP-opdatering**, før foundation erklæres LOCKED. Decision Engine startes ikke her.
