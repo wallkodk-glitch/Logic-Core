@@ -3,6 +3,7 @@ name: Deploy Logic Core
 on:
   push:
     branches: [main]
+    paths-ignore: [logic-core-mobile-release.zip]
   workflow_dispatch:
 
 permissions:
@@ -14,27 +15,22 @@ concurrency:
 
 jobs:
   build:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
-      # Only the first mobile installation uses write permission to commit source.
-      contents: write
+      contents: read
       pages: read
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-      - name: Install source from mobile upload (first run only)
-        if: ${{ hashFiles('package.json') == '' }}
+        with:
+          persist-credentials: false
+      - name: Reserve ZIP uploads for the mobile workflow
         run: |
-          test -f logic-core-v0.1.zip
-          unzip -o logic-core-v0.1.zip
-          test -f package-lock.json
-          test -f src/main.tsx
-          rm logic-core-v0.1.zip
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add --all -- . ':!.github'
-          git commit -m "Install Logic Core v0.1 source from mobile upload"
-          git push origin HEAD:main
+          if test -e logic-core-mobile-release.zip; then
+            echo 'A mobile ZIP is pending. Complete/remove it before a standard deployment.'
+            exit 1
+          fi
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
@@ -60,12 +56,18 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       pages: write
       id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Refuse deployment of superseded source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ github.sha }}
+        run: test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)" = "$EXPECTED_SHA"
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
