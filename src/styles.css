@@ -181,6 +181,34 @@ dd { margin: 0; text-align: right; }
 .test-status.fail { color: var(--danger); background: #ffb1a914; }
 .diagnostic-list p { font-size: 14px; color: var(--muted); margin-top: 7px; }
 .error-screen { max-width: 520px; padding: max(35px, env(safe-area-inset-top)) 24px; margin: 0 auto; }
+.decision-intro { margin-bottom: 20px; }
+.decision-filters { margin: 24px 0 16px; }
+.decision-workspace { border: 0; padding: 0; margin: 0; min-width: 0; }
+.decision-section { border-top: 1px solid var(--line); margin-top: 24px; padding-block: 12px; min-width: 0; }
+.decision-section > summary { min-height: 48px; padding-block: 12px; cursor: pointer; font-weight: 600; line-height: 1.5; overflow-wrap: anywhere; }
+.decision-field { margin-block: 14px; min-width: 0; }
+.decision-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; margin-block: 16px; padding: 14px; min-width: 0; }
+.decision-editor input, .decision-editor textarea, .decision-editor select, .decision-filters input, .decision-filters select { min-width: 0; max-width: 100%; width: 100%; scroll-margin-block: 100px; }
+.decision-editor label { overflow-wrap: anywhere; }
+.decision-editor input:disabled, .decision-editor textarea:disabled, .decision-editor select:disabled { opacity: 1; color: #b7c6cd; -webkit-text-fill-color: #b7c6cd; }
+.decision-editor .form-actions { flex-wrap: wrap; }
+.decision-editor .form-actions > .button { flex: 1 1 160px; white-space: normal; }
+.decision-editor .notice .button { margin-top: 12px; }
+.score-stack { display: grid; gap: 8px; margin-top: 12px; min-width: 0; }
+.score-stack > div { min-width: 0; }
+.score-results { margin-top: 20px; padding: 14px; border: 1px solid #b2fac83b; border-radius: 12px; }
+.score-results > p:not(.eyebrow) { display: flex; flex-wrap: wrap; gap: 4px 14px; justify-content: space-between; margin-block: 12px; }
+.score-results strong { color: var(--accent); font: 14px var(--mono); }
+.score-results small { display: block; color: var(--muted); line-height: 1.6; }
+.review-due { background: #f7ce8614; color: #eed09b; }
+.decision-history { margin-top: 34px; }
+.decision-history > p { margin-top: 8px; font-size: 14px; }
+.belief-list { margin: 16px 0; }
+.belief-list > div { margin-top: 16px; }
+.belief-list dt { color: var(--muted); font-size: 13px; }
+.belief-list dd { margin: 5px 0 0; white-space: pre-wrap; line-height: 1.6; }
+.history-score { margin-top: 8px; color: var(--muted); font-size: 14px; }
+.review-form .button { margin-top: 16px; }
 .error-screen > * { margin-bottom: 22px; }
 .skip-link { position: fixed; left: 15px; top: -100px; z-index: 99; background: var(--accent); color: #122019; padding: 14px; border-radius: 8px; }
 .skip-link:focus { top: max(15px, env(safe-area-inset-top)); }

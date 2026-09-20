@@ -1,49 +1,88 @@
-# Logic Core v0.1.2 — Pipeline Proof
+# Logic Core v0.2.0 — Decision Engine
 
-Minimal release oven på den fysisk accepterede v0.1.1. Appversion **0.1.2**,
-schemaVersion **1**. Ingen nye features, dependencies, migrationer eller UI-ændringer.
+App **0.2.0**, data **schema 2**. Bygget direkte på den fastlåste v0.1.2
+Pipeline Proof. React/TypeScript/Vite, local-first og GitHub Pages PWA bevares.
+Ingen AI, backend, login, telemetry, API keys eller cloud-sync.
 
-## Installation fra iPhone — kun én ZIP
+## Installer fra iPhone — kun én ZIP
 
-1. Eksportér en backup fra den eksisterende installerede Logic Core til Filer.
-2. Gem denne releases **logic-core-mobile-release.zip** i Filer. Pak den ikke ud.
-3. I Safari: åbn **wallkodk-glitch/Logic-Core**, gå til repositoryets rod,
-   **Add file → Upload files → Browse**, vælg ZIP, og commit til **main**.
-4. Vent på grønne **build → install → deploy** i **Mobile release Logic Core**.
-   ZIP-filen fjernes automatisk fra main efter succesfuld source-installation.
-5. Åbn din eksisterende PWA online, luk alle Logic Core-vinduer, og genåbn.
-   Gentag online/luk/genåbn hvis en ny service worker stadig venter.
+**Gate: installér og acceptér først v0.1.2.** Diagnostics skal vise 0.1.2/schema 1,
+eksisterende data skal være intakte, og ZIP-only Actions-run skal være grønt.
 
-Upload ingen workflows eller source-filer. Begge protected workflows er byte-identiske
-med den accepterede v0.1.1, inklusive setup-node uden staging npm-cache. Hvis Safari
-skjuler Upload-knappen, vælg “Anmod om websted til computer”.
+1. Eksportér en JSON-backup fra din eksisterende PWA til Filer. Behold denne
+   schema 1-backup separat fra senere schema 2-backups.
+2. Gem v0.2.0's **logic-core-mobile-release.zip** i Filer uden at udpakke.
+   Gem A og B i hver sin mappe, så iOS ikke tilføjer et tal til filnavnet.
+3. Safari → **wallkodk-glitch/Logic-Core** → repository root →
+   **Add file → Upload files → Browse** → vælg denne ZIP → **Commit to main**.
+4. Actions → **Mobile release Logic Core**: vent på grønne build, install og deploy.
+   ZIP fjernes automatisk ved installation. Upload ingen workflows/source-filer.
+5. Åbn den eksisterende PWA online. Luk alle Logic Core-vinduer, og genåbn.
+   Gentag hvis service worker stadig venter. **Slet ikke app/browserdata.**
+6. Diagnostics: **0.2.0 / schema 2 / 8/8 PASS**. Kontrollér dine eksisterende data.
 
-## Acceptance / gate før v0.2.0
+Safari kan kræve “Anmod om websted til computer” for at vise Upload-knappen.
+Origin, Pages-base `/Logic-Core/`, manifest/install identity og storage-key
+`logic-core:/Logic-Core/:data` er uændrede. Recovery bruger samme key + `:recovery`.
 
-- Diagnostics viser **0.1.2**, **schema 1** og **8/8 PASS online**.
-- Eksisterende projekter og aktiviteter er intakte efter genåbning.
-- Test projekt-CRUD, Command, backup/import/recovery og offline-genåbning.
-- Actions viser succes, main viser bot-commit for 0.1.2, og ZIP er væk.
-- **Upload først v0.2.0 når disse checks består.**
+## Første beslutning
 
-v0.1.1 er fysisk accepteret af Jakob. v0.1.2's ZIP-only proof er ikke fysisk
-afprøvet i byggemiljøet; Foundation må markeres LOCKED, når ovenstående består.
+Mere → Decisions → Ny beslutning. Gem kladden løbende og før navigation/lukning.
+Arbejd gennem Goal, Reality, Constraints/Assumptions, Options, valgfri Scoring,
+dit manuelle valg og Execution/Review.
 
-## Uændret fundament
+“Beslut og gem snapshot” kræver titel, mål, mindst to navngivne muligheder,
+dit valg, begrundelse og næste handling. Hvis du bruger kriterier, kræves alle
+scores. Et højt tal vælger aldrig for dig.
 
-React + TypeScript + Vite; hash-navigation; lokal versioneret AppStore; JSON
-import/export og én recovery-snapshot med journal; PWA og GitHub Pages.
-Ingen backend, login, telemetry, secrets eller cloud-sync.
+En besluttet beslutning er skrivebeskyttet. Genåbning laver en kladde uden at
+ændre tidligere snapshots. Næste beslutning tilføjer et nyt snapshot.
+Reviews tilføjes med Fasthold / Genåbn / Afslut. Projektlink er valgfrit.
 
-Origin, base path, manifest, install identity og storage-key er uændrede:
-`logic-core:/Logic-Core/:data`; recovery: samme key + `:recovery`.
+## iPhone acceptance — v0.2.0
 
-Læs [VALIDATION](docs/VALIDATION.md), [FOUNDATION_LOCK](docs/FOUNDATION_LOCK.md)
-og [FILE_TREE](docs/FILE_TREE.txt) for checks og source-overblik.
+- Projekter og aktiviteter fra v0.1.2 er bevaret; CRUD og Command fungerer.
+- Lav/gem/genåbn en kladde, også uden projekt og uden kriterier.
+- Tilføj to kriterier og scores. Kontrollér et vægtet signal; vælg gerne den
+  lavere score. Appen må ikke ændre dit valg.
+- Beslut → snapshot 1 → genåbn → ændr antagelser → beslut → snapshot 2.
+  Kontrollér at snapshot 1 er uændret.
+- Tilføj reviews med Fasthold, Genåbn og Afslut; tidligere reviews bevares.
+- Link en beslutning til et testprojekt; slet projektet. Beslutningen og
+  historikken skal bestå uden projektlink.
+- Test arkivering, genåbning og bekræftet sletning med testdata.
+- Eksportér schema 2-backup. Test preview/restore og recovery med backup sikret.
+  En gammel schema 1-backup skal vise **1 → 2** og **0 beslutninger**:
+  restore erstatter ALT aktuelt indhold, ikke kun projekter.
+- Luk/genåbn, åbn offline, og kontrollér gemte beslutninger/historik.
+- Kontrollér smal skærm (320 px), touch, tastatur og ingen horisontal sidescroll.
 
-Ved build/test/validation-fejl er remote source uændret og ZIP bliver. Ved push-fejl
-sker ingen deployment. Ved Pages-fejl efter install er den testede source committed;
-brug **Actions → Deploy Logic Core → Run workflow → main** til retry.
+## Sikkerhed og begrænsninger
 
-Lokalt lager er ikke en ekstern backup. Brug samme installerede PWA, bevar URL'en,
-og gem regelmæssigt JSON i Filer. Brug én aktiv editor ad gangen.
+Hele dokumentet valideres før skrivning. V1 migreres eksplicit til v2;
+projekter/aktiviteter bevares, decisions starter tom. Korrupt/future data
+nulstilles aldrig. Preview og recovery-journal er bevaret.
+
+Gem manuelt; ingen autosave, sync eller push-notifikationer. localStorage er
+ikke en ekstern backup. Brug én aktiv editor. Stale-write-checks beskytter mod
+kendte forældede versioner, men localStorage giver ikke en ægte multi-tab lock.
+Historik er uændrelig gennem appen, ikke et kryptografisk revisionsbevis.
+
+V0.1.x kan ikke læse schema 2. Installer ikke gammel kode oven på v2-data.
+Release-controlleren afviser samme/lavere appversion. En eventuel rollback
+kræver en ny, højere release med bevidst kompatibilitet — ikke blot en gammel ZIP.
+
+## Release-kontrakt — uændret
+
+Én root-snapshot ZIP. Validate/stage → locked install → tests → typecheck/build →
+PWA/source-byte-verification → install/bot-commit/remove ZIP → Pages deploy.
+Begge protected workflows og setup-node-fixet er uændrede fra accepteret main.
+Kun install-job har contents: write; ingen npm/release-scripts fra arkivet kører dér.
+
+Validation/build/test-fejl: ingen source-installation eller deployment; ZIP bliver.
+Push-fejl: ingen deploy. Pages-fejl efter installation: testet source er committed,
+ZIP er fjernet; retry **Actions → Deploy Logic Core → Run workflow → main**.
+Ingen workflow/source-upload eller terminal er nødvendig.
+
+Læs [Decision Engine](docs/DECISION_ENGINE.md), [VALIDATION](docs/VALIDATION.md),
+[FOUNDATION_LOCK](docs/FOUNDATION_LOCK.md) og [FILE_TREE](docs/FILE_TREE.txt).

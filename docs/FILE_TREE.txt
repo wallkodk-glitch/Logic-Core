@@ -1,11 +1,13 @@
-LOGIC CORE v0.1.2 — FILE TREE
+Logic Core v0.2.0 — 80 source files; schema 2
+Full root snapshot (not a wrapper folder). Excludes .git, node_modules, dist and caches.
+Predecessor: frozen v0.1.2 commit 7f1d70a.
 
-64 source-filer direkte i archive root:
-
+FILE TREE — paths relative to repository root
 .github/workflows/deploy.yml
 .github/workflows/mobile-release.yml
 .gitignore
 README.md
+docs/DECISION_ENGINE.md
 docs/FILE_TREE.txt
 docs/FOUNDATION_LOCK.md
 docs/VALIDATION.md
@@ -30,17 +32,26 @@ src/app/App.tsx
 src/app/AppShell.tsx
 src/app/router.ts
 src/app/useDevice.ts
+src/app/useNow.ts
 src/components/DataTools.tsx
 src/components/ErrorBoundary.tsx
 src/components/ExportButton.tsx
 src/components/Icon.tsx
 src/components/PageHeader.tsx
 src/components/ProjectCard.tsx
+src/components/decisions/DecisionField.tsx
+src/components/decisions/DecisionHistory.tsx
+src/components/decisions/DecisionOptions.tsx
+src/components/decisions/DecisionReview.tsx
+src/components/decisions/DecisionScoring.tsx
 src/config.ts
+src/domain/decisions.ts
 src/domain/types.ts
 src/env.d.ts
 src/main.tsx
 src/pages/CommandPage.tsx
+src/pages/DecisionEditorPage.tsx
+src/pages/DecisionsPage.tsx
 src/pages/DiagnosticsPage.tsx
 src/pages/MorePage.tsx
 src/pages/PlaceholderPage.tsx
@@ -51,26 +62,66 @@ src/pwa/diagnostics.ts
 src/pwa/register.ts
 src/storage/backup.ts
 src/storage/context.tsx
+src/storage/decision-validation.ts
 src/storage/recovery.ts
 src/storage/schema.ts
 src/storage/store.ts
+src/storage/validation.ts
 src/styles.css
 src/utils/download.ts
 src/utils/format.ts
 tests/backup.test.ts
 tests/config.test.ts
+tests/decision-fixtures.ts
+tests/decision-ui.test.ts
+tests/decisions.test.ts
 tests/fixtures/v0.1-backup.json
 tests/fixtures/v0.1-primary.json
+tests/migration.test.ts
 tests/offline.test.ts
 tests/storage.test.ts
 tests/test_release.py
 tsconfig.json
 vite.config.ts
 
-Ændret siden accepteret v0.1.1:
+CHANGED / ADDED SINCE v0.1.2
 README.md
 docs/FILE_TREE.txt
 docs/FOUNDATION_LOCK.md
 docs/VALIDATION.md
 package-lock.json
 package.json
+src/app/App.tsx
+src/app/AppShell.tsx
+src/app/router.ts
+src/components/DataTools.tsx
+src/domain/types.ts
+src/pages/PlaceholderPage.tsx
+src/pages/ProjectEditorPage.tsx
+src/pages/SettingsPage.tsx
+src/storage/backup.ts
+src/storage/schema.ts
+src/storage/store.ts
+src/styles.css
+tests/backup.test.ts
+tests/config.test.ts
+tests/storage.test.ts
+docs/DECISION_ENGINE.md
+src/app/useNow.ts
+src/components/decisions/DecisionField.tsx
+src/components/decisions/DecisionHistory.tsx
+src/components/decisions/DecisionOptions.tsx
+src/components/decisions/DecisionReview.tsx
+src/components/decisions/DecisionScoring.tsx
+src/domain/decisions.ts
+src/pages/DecisionEditorPage.tsx
+src/pages/DecisionsPage.tsx
+src/storage/decision-validation.ts
+src/storage/validation.ts
+tests/decision-fixtures.ts
+tests/decision-ui.test.ts
+tests/decisions.test.ts
+tests/migration.test.ts
+
+Protected workflows, controller/generator/template, package-release.py, PWA identity,
+storage key and runtime dependencies remain unchanged.

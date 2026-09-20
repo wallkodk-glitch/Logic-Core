@@ -11,7 +11,7 @@ const nav: { href: string; label: string; icon: IconName; pages: Page[] }[] = [
   { href: '#/', label: 'Command', icon: 'command', pages: ['command'] },
   { href: '#/projects', label: 'Projekter', icon: 'projects', pages: ['projects', 'project'] },
   { href: '#/opportunities', label: 'Muligheder', icon: 'opportunity', pages: ['opportunities'] },
-  { href: '#/more', label: 'Mere', icon: 'more', pages: ['more', 'decisions', 'knowledge', 'settings', 'diagnostics', 'not-found'] },
+  { href: '#/more', label: 'Mere', icon: 'more', pages: ['more', 'decisions', 'decision', 'knowledge', 'settings', 'diagnostics', 'not-found'] },
 ];
 
 export function AppShell({ page, children }: { page: Page; children: ReactNode }) {

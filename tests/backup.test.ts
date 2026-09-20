@@ -5,13 +5,16 @@ import { AppStore } from '../src/storage/store.ts';
 import type { StoragePort } from '../src/storage/store.ts';
 import { MAX_BACKUP_BYTES, parseBackup } from '../src/storage/backup.ts';
 import { parseRecovery } from '../src/storage/recovery.ts';
+import { migrateData } from '../src/storage/schema.ts';
 
 const key = 'logic-core:/Logic-Core/:data';
 const recoveryKey = `${key}:recovery`;
 const legacyRaw = readFileSync('tests/fixtures/v0.1-primary.json', 'utf8');
 const legacyBackup = readFileSync('tests/fixtures/v0.1-backup.json', 'utf8');
-const incomingData = JSON.parse(legacyRaw);
-incomingData.projects[0].title = 'Imported project';
+const migratedLegacy = migrateData(JSON.parse(legacyRaw));
+const migratedRaw = JSON.stringify(migratedLegacy);
+const incomingData = structuredClone(migratedLegacy);
+incomingData.projects[0]!.title = 'Imported project';
 const incoming = JSON.stringify({ app: 'Logic Core', appVersion: '0.1.1', backupVersion: 1, data: incomingData });
 
 class FaultStorage implements StoragePort {
@@ -41,24 +44,24 @@ function restore(store: AppStore, source = incoming) {
   const result = store.restoreBackup(prepare(store, source), '0.1.1'); assert(result.ok, result.ok ? '' : result.error); return result.value;
 }
 
-test('v0.1 primary loads byte-for-byte without migration or rewrite', () => {
+test('v0.1 primary migrates at boot without changing projects, activities or revision', () => {
   const { store, port } = fixture();
   assert.equal(store.getSnapshot().error, null);
-  assert.deepEqual(store.getSnapshot().data, JSON.parse(legacyRaw));
-  assert.equal(port.getItem(key), legacyRaw);
+  assert.deepEqual(store.getSnapshot().data, migratedLegacy);
+  assert.equal(port.getItem(key), migratedRaw);
   assert.equal(port.getItem(recoveryKey), null);
-  assert.equal(store.getSnapshot().data.schemaVersion, 1);
+  assert.equal(store.getSnapshot().data.schemaVersion, 2);
 });
 test('v0.1 JSON export and raw schema v1 both remain import-compatible', () => {
-  assert.deepEqual(parseBackup(legacyBackup).data, JSON.parse(legacyRaw));
-  assert.deepEqual(parseBackup(legacyRaw).data, JSON.parse(legacyRaw));
+  assert.deepEqual(parseBackup(legacyBackup).data, migratedLegacy);
+  assert.deepEqual(parseBackup(legacyRaw).data, migratedLegacy);
   assert.equal(parseBackup(legacyBackup).preview.appVersion, '0.1.0');
 });
 test('valid export previews counts/metadata without writing and restores the entire document', () => {
   const { store, port } = fixture(); const before = [...port.items];
   const preview = prepare(store);
   assert.equal(preview.preview.projects, 1); assert.equal(preview.preview.activities, 2);
-  assert.equal(preview.preview.schemaVersion, 1); assert.equal(preview.preview.backupVersion, 1);
+  assert.equal(preview.preview.schemaVersion, 2); assert.equal(preview.preview.backupVersion, 1);
   assert.deepEqual([...port.items], before);
   assert(store.restoreBackup(preview, '0.1.1').ok);
   assert.deepEqual(store.getSnapshot().data, incomingData);
@@ -82,7 +85,7 @@ const invalid: [string, () => string][] = [
   ['rollover timestamp', () => JSON.stringify({ ...incomingData, activity: [{ ...incomingData.activity[0], createdAt: '2026-02-30T12:00:00.000Z' }] })],
   ['reversed project timestamps', () => JSON.stringify({ ...incomingData, projects: [{ ...incomingData.projects[0], updatedAt: '2000-01-01T00:00:00.000Z' }] })],
   ['negative revision', () => JSON.stringify({ ...incomingData, revision: -1 })],
-  ['future schema', () => JSON.stringify({ ...incomingData, schemaVersion: 2 })],
+  ['future schema', () => JSON.stringify({ ...incomingData, schemaVersion: 3 })],
   ['future backup format', () => JSON.stringify({ backupVersion: 2, data: incomingData })],
   ['unknown object fields', () => JSON.stringify({ ...incomingData, extra: true })],
   ['wrong metadata type', () => JSON.stringify({ data: incomingData, appVersion: 42 })],
@@ -102,7 +105,7 @@ test('oversized import is rejected before parsing', () => {
   assert.throws(() => parseBackup(' '.repeat(MAX_BACKUP_BYTES + 1)), /8 MiB/);
 });
 test('pre-restore snapshot keeps the exact raw primary bytes', () => {
-  const { store, port } = fixture(); const raw = `\n${JSON.stringify(JSON.parse(legacyRaw), null, 2)}\n`;
+  const { store, port } = fixture(); const raw = `\n${JSON.stringify(migratedLegacy, null, 2)}\n`;
   port.setItem(key, raw); store.refresh(); restore(store);
   assert.equal(store.recoveryStatus().snapshot?.rawPrimary, raw);
   assert.equal(parseRecovery(port.getItem(recoveryKey)).pending, undefined);
@@ -110,13 +113,13 @@ test('pre-restore snapshot keeps the exact raw primary bytes', () => {
 test('exported recovery contains the original document and is valid for import', () => {
   const { store } = fixture(); restore(store);
   const result = store.exportRecovery('0.1.1'); assert(result.ok);
-  assert.deepEqual(parseBackup(result.value).data, JSON.parse(legacyRaw));
+  assert.deepEqual(parseBackup(result.value).data, migratedLegacy);
 });
 test('recovery restore swaps in the previous data and backs up the replaced primary', () => {
   const { store, port } = fixture(); restore(store);
   const recovery = store.prepareRecovery(); assert(recovery.ok);
   assert(store.restoreBackup(recovery.value, '0.1.1').ok);
-  assert.equal(port.getItem(key), legacyRaw);
+  assert.equal(port.getItem(key), migratedRaw);
   assert.deepEqual(JSON.parse(store.recoveryStatus().snapshot!.rawPrimary!), incomingData);
 });
 test('explicit recovery delete preserves primary and unrelated application data', () => {
@@ -164,11 +167,11 @@ test('cleanup failure reports committed restore honestly and completes on reopen
   port.fail = (name, count) => name === recoveryKey && count === 2;
   const result = store.restoreBackup(preview, '0.1.1'); assert(result.ok); assert(result.value.warning);
   assert.deepEqual(store.getSnapshot().data, incomingData);
-  assert.equal(store.recoveryStatus().snapshot?.rawPrimary, legacyRaw);
+  assert.equal(store.recoveryStatus().snapshot?.rawPrimary, migratedRaw);
   assert.equal(store.addCommand('blocked until cleanup').ok, false);
   port.fail = null; const reopened = new AppStore(() => port, key);
   assert.equal(reopened.recoveryStatus().pending, false);
-  assert.equal(reopened.recoveryStatus().snapshot?.rawPrimary, legacyRaw);
+  assert.equal(reopened.recoveryStatus().snapshot?.rawPrimary, migratedRaw);
   assert(reopened.addCommand('cleanup completed').ok);
 });
 test('ambiguous journal protects all raw data and blocks further writes', () => {
@@ -197,7 +200,7 @@ test('malformed recovery is preserved, can be exported and explicitly deleted', 
   const exported = store.exportRecovery('0.1.1'); assert(exported.ok);
   assert.equal(JSON.parse(exported.value).recoveryJournal, '{broken-recovery');
   assert(store.deleteRecovery('{broken-recovery').ok);
-  assert.equal(port.getItem(key), legacyRaw);
+  assert.equal(port.getItem(key), migratedRaw);
 });
 test('same-data restore does not replace the recovery snapshot', () => {
   const { store, port } = fixture(); restore(store); const before = [...port.items];

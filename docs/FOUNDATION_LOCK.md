@@ -1,39 +1,52 @@
-# Foundation status — v0.1.2 Pipeline Proof
+# Foundation status — v0.2.0
 
-## Accepteret baseline
+## Accepteret udgangspunkt
 
 v0.1.1 main: `5294f5243fd5b5c8c7147c0d8fa6f78be40917ab`.
-64/64 source-filer er verificeret med Git blob-hashes mod GitHub.
+64/64 source-filer blev verificeret med Git blob-hashes mod GitHub.
+Jakob har bekræftet fysisk iPhone, Diagnostics 8/8, offline, backup/recovery og
+mobile build/install/deploy PASS. Den status gælder baseline, ikke de nye releases.
 
-Jakob har bekræftet fysisk iPhone acceptance, Diagnostics 8/8, offline PWA,
-backup/import/recovery og mobile build → install → deploy som PASS.
-GitHub mobile run [35428251696](https://github.com/wallkodk-glitch/Logic-Core/actions/runs/35428251696)
-blev også læst som successful under source-audit.
+## To separate releases — fast rækkefølge
 
-## Minimal v0.1.2-diff
+1. **v0.1.2 / schema 1:** minimal Pipeline Proof. Kun app/package-version og de
+   fire relevante dokumenter ændres. Ingen runtime-, test-, pipeline- eller
+   schemaændring. ZIP SHA-256:
+   `34858f6a2e39c3fa04733c0541f04617d83029ca6544c32f6840af0023e66e07`.
+2. **v0.2.0 / schema 2:** denne source er baseret på netop den fastlåste v0.1.2
+   source-state (lokal predecessor commit `7f1d70a`). Decision Engine samt
+   eksplicit migration tilføjes uden at ændre release-kontrakten.
 
-Kun package/appversion (inklusive lockfile) og README / FOUNDATION_LOCK / VALIDATION /
-FILE_TREE er opdateret. Ingen ændring i src, tests, public, dependencies, dataskema,
-storage-key, build-scripts eller release-kontrakt. Workflows og generator/template
-er uændrede fra accepteret main, inklusive setup-node-rettelsen.
+**Foundation LOCKED: AFVENTER Jakobs fysiske v0.1.2 ZIP-only acceptance.**
+Når den består, kan status registreres LOCKED med dato/Actions-run; der kræves
+ingen kildefilredigering fra iPhone. Installér først derefter v0.2.0.
+v0.2.0's egen acceptance er en separat gate.
 
-## Foundation LOCKED — acceptance gate
+## Låste identiteter og release-kontrakt
 
-Status: **AFVENTER fysisk v0.1.2 ZIP-only proof**.
+Begge workflows, trusted controller, generator, template, pakker, setup-node-fix,
+Pages-base, storage-key og PWA install identity er uændrede fra accepteret main.
 
-Efter Jakobs acceptance kan dette dokument markeres **LOCKED** med dato og
-Actions-run: kun ZIP uploadet; build/install/deploy PASS; Diagnostics 0.1.2/schema 1;
-eksisterende data, CRUD, offline og backup/recovery PASS.
+Protected workflow SHA-256:
 
-v0.2.0 bygges på den fastlåste v0.1.2 source, men skal ikke installeres før gate er bestået.
+- deploy.yml: `174cac52436afe120843118d78ed7c1a717d3f93ee24b368d2bf4601ffcc7f4b`
+- mobile-release.yml: `089bce6379f1d6ad4a72362e54ae737dc4b4b2cdcea3312ae84512e3b91ad705`
 
-## Sikkerhedsmodel fastholdt
+Read-only stage/build/test først. Kun isoleret install-job har contents: write;
+intet archive-leveret npm/script køres dér. Controller genvaliderer ZIP-digest
+og current main før installation; push er non-force. Same/lower version afvises.
+GITHUB_TOKEN-commit starter ikke et ekstra push-run; samme mobile run deployer
+allerede testet artifact. ZIP-only push starter ikke normal deploy.
 
-Read-only build/test før source-installation. Kun install-job har contents: write;
-ingen npm/archive-scripts køres i dette job. Staging, path/shape/size-validering,
-SHA-256, bytebeskyttede workflows, version monotonicity, non-force push og
-freshness-checks er uændrede. Ingen PAT eller ekstra secrets.
+Et fuldt source-snapshot synkroniserer kun src, public, scripts, tests, docs samt
+.gitignore, README.md, index.html, package.json, package-lock.json, tsconfig.json,
+vite.config.ts og valgfri LICENSE. .git, .github-workflows og unmanaged metadata
+beskyttes. ZIP må ikke indeholde node_modules, dist, git, caches eller secrets.
 
-Primary-write er atomisk for hele dokumentet; recovery-journal beskytter tidligere
-raw bytes mellem to keys. Ingen silent reset eller fuld multi-tab-transaktionsgaranti.
-Browser-/iOS-oprydning kan fjerne lokale data; eksport til Filer er den separate backup.
+## Databeskyttelse
+
+Ingen silent reset, lossful migration eller partial import. Fuld validation før
+én primary write; recovery-journal bevarer raw pre-restore-data. Historiens app-API
+er append-only. Imports valideres, men er ikke digitalt signerede beviser.
+Samtidige faner har stale-detection, ikke en garanteret cross-tab transaction lock.
+Bevar separat JSON-backup i Filer før upgrade og ved løbende brug.

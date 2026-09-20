@@ -1,10 +1,14 @@
 import type { Activity, AppData, Project, ProjectInput, Result } from '../domain/types.ts';
 import { PROJECT_STATUSES } from '../domain/types.ts';
-import { ACTIVITY_LIMIT, emptyData, parseData, validateData } from './schema.ts';
+import { ACTIVITY_LIMIT, emptyData, parseData, readDocument, validateData } from './schema.ts';
 import { parseBackup, serializeBackup } from './backup.ts';
 import type { PreparedRestore } from './backup.ts';
 import { parseRecovery, resolveRecovery, settleRecovery, writeRaw } from './recovery.ts';
 import type { RecoveryRecord, RecoveryStatus } from './recovery.ts';
+import { DECISION_LIMITS, decisionContent, decisionInput, nextTimestamp } from '../domain/decisions.ts';
+import type { Decision, DecisionInput, ReviewInput } from '../domain/decisions.ts';
+import { validateDecisionInput, validateReviewInput } from './decision-validation.ts';
+import { deepFreeze } from './validation.ts';
 
 export interface StoragePort {
   getItem(key: string): string | null;
@@ -56,15 +60,31 @@ export class AppStore {
   };
 
   private publish(data: AppData, error: string | null): void {
-    this.snapshot = { data, error };
+    this.snapshot = Object.freeze({ data: deepFreeze(data), error });
     this.listeners.forEach(listener => listener());
   }
 
   refresh = (): void => {
     try {
-      settleRecovery(this.storage(), this.key, this.recoveryKey);
-      const raw = this.storage().getItem(this.key);
-      const data = parseData(raw);
+      const port = this.storage();
+      settleRecovery(port, this.key, this.recoveryKey);
+      let raw = port.getItem(this.key);
+      const { data, migrated } = readDocument(raw);
+      if (migrated) {
+        // Validate/migrate entirely before the single atomic primary write.
+        // Existing recovery is untouched. A failed write retains the original v1.
+        try {
+          if (port.getItem(this.key) !== raw) throw new Error('Data blev ændret i et andet vindue under opgraderingen. Genåbn appen.');
+          const upgraded = JSON.stringify(data);
+          port.setItem(this.key, upgraded);
+          raw = upgraded;
+        } catch (error) {
+          this.raw = raw;
+          this.loadBlocked = true;
+          this.publish(data, `Opgraderingen til schema 2 kunne ikke gemmes. Originale data er bevaret; redigering er blokeret. ${message(error)}`);
+          return;
+        }
+      }
       this.raw = raw;
       this.loadBlocked = false;
       this.publish(data, null);
@@ -81,7 +101,7 @@ export class AppStore {
       settleRecovery(port, this.key, this.recoveryKey);
       if (port.getItem(this.key) !== this.raw) {
         this.refresh();
-        throw new Error('Data er ændret i et andet vindue. Kontrollér projektet, og prøv igen.');
+        throw new Error('Data er ændret i et andet vindue. Kontrollér indholdet, og prøv igen.');
       }
       const next = structuredClone(this.snapshot.data);
       const value = change(next);
@@ -100,9 +120,10 @@ export class AppStore {
     }
   }
 
-  private record(data: AppData, type: Activity['type'], text: string, projectId?: string): void {
+  private record(data: AppData, type: Activity['type'], text: string, projectId?: string, decisionId?: string): void {
     const event: Activity = { id: crypto.randomUUID(), type, text, createdAt: new Date().toISOString() };
     if (projectId !== undefined) event.projectId = projectId;
+    if (decisionId !== undefined) event.decisionId = decisionId;
     data.activity = [event, ...data.activity].slice(0, ACTIVITY_LIMIT);
   }
 
@@ -136,6 +157,13 @@ export class AppStore {
       if (!project) throw new Error('Projektet findes ikke længere.');
       if (project.updatedAt !== expectedUpdatedAt) throw new Error('Projektet er blevet ændret. Åbn det igen før sletning.');
       data.projects = data.projects.filter(item => item.id !== id);
+      for (const decision of data.decisions) {
+        if (decision.linkedProjectId === id) {
+          delete decision.linkedProjectId;
+          decision.updatedAt = nextTimestamp(decision.updatedAt);
+          this.record(data, 'decision.updated', `Projektlink fjernet: ${decision.title}`, undefined, decision.id);
+        }
+      }
       this.record(data, 'project.deleted', `Slettet: ${project.title}`, id);
     });
   }
@@ -145,6 +173,86 @@ export class AppStore {
       const trimmed = text.trim();
       if (!trimmed || trimmed.length > 4000) throw new Error('Skriv en kommando på 1–4.000 tegn.');
       this.record(data, 'command', trimmed);
+    });
+  }
+
+  private currentDecision(data: AppData, id: string, expectedUpdatedAt: string): Decision {
+    const decision = data.decisions.find(item => item.id === id);
+    if (!decision) throw new Error('Beslutningen findes ikke længere.');
+    if (decision.updatedAt !== expectedUpdatedAt) throw new Error('Beslutningen er ændret siden du åbnede den. Genindlæs den før flere ændringer.');
+    return decision;
+  }
+
+  saveDecision(input: DecisionInput, id?: string, expectedUpdatedAt?: string, markDecided = false): Result<Decision> {
+    return this.transaction(data => {
+      validateDecisionInput(input, markDecided);
+      const existing = id ? this.currentDecision(data, id, expectedUpdatedAt ?? '') : undefined;
+      if (existing && existing.status !== 'draft') throw new Error('Genåbn beslutningen før du redigerer. Historiske snapshots ændres aldrig.');
+      if (!existing && data.decisions.length >= DECISION_LIMITS.decisions) throw new Error('Du har nået grænsen på 100 beslutninger. Eksportér og ryd op før flere oprettes.');
+      const timestamp = nextTimestamp(existing?.updatedAt);
+      const next: Decision = {
+        ...structuredClone(input), title: input.title.trim(), id: existing?.id ?? crypto.randomUUID(), status: markDecided ? 'decided' : 'draft',
+        createdAt: existing?.createdAt ?? timestamp, updatedAt: timestamp,
+        commits: existing?.commits ?? [], reviews: existing?.reviews ?? [],
+      };
+      if (markDecided) {
+        if (next.commits.length >= DECISION_LIMITS.commits) throw new Error('Maksimalt 50 beslutnings-snapshots. Eksportér historikken; intet slettes automatisk.');
+        const content = decisionContent(next);
+        // validateDecisionInput(..., true) already requires a real selected option.
+        if (!content.selectedOptionId) throw new Error('Vælg en mulighed selv.');
+        next.commits.push({ id: crypto.randomUUID(), createdAt: timestamp, snapshot: { ...content, selectedOptionId: content.selectedOptionId } });
+      }
+      data.decisions = existing ? data.decisions.map(item => item.id === id ? next : item) : [next, ...data.decisions];
+      this.record(data, existing ? 'decision.updated' : 'decision.created', `${existing ? 'Opdateret' : 'Oprettet'}: ${next.title}`, undefined, next.id);
+      if (markDecided) this.record(data, 'decision.decided', `Besluttet: ${next.title}`, undefined, next.id);
+      return next;
+    });
+  }
+
+  decideDecision(id: string, expectedUpdatedAt: string): Result<Decision> {
+    const decision = this.snapshot.data.decisions.find(item => item.id === id);
+    if (!decision) return { ok: false, error: 'Beslutningen findes ikke længere.' };
+    return this.saveDecision(decisionInput(decision), id, expectedUpdatedAt, true);
+  }
+
+  transitionDecision(id: string, action: 'reopen' | 'close' | 'archive', expectedUpdatedAt: string): Result<Decision> {
+    return this.transaction(data => {
+      const decision = this.currentDecision(data, id, expectedUpdatedAt);
+      if (action === 'close' && decision.status !== 'decided') throw new Error('Kun en besluttet beslutning kan afsluttes. En kladde kan arkiveres.');
+      if (action === 'reopen' && decision.status === 'draft') throw new Error('Beslutningen er allerede en kladde.');
+      if (action === 'archive' && decision.status === 'archived') throw new Error('Beslutningen er allerede arkiveret.');
+      decision.status = action === 'reopen' ? 'draft' : action === 'close' ? 'closed' : 'archived';
+      decision.updatedAt = nextTimestamp(decision.updatedAt);
+      const type = action === 'reopen' ? 'decision.reopened' : action === 'close' ? 'decision.closed' : 'decision.archived';
+      this.record(data, type, `${action === 'reopen' ? 'Genåbnet' : action === 'close' ? 'Afsluttet' : 'Arkiveret'}: ${decision.title}`, undefined, id);
+      return decision;
+    });
+  }
+
+  reviewDecision(id: string, input: ReviewInput, expectedUpdatedAt: string): Result<Decision> {
+    return this.transaction(data => {
+      validateReviewInput(input);
+      const decision = this.currentDecision(data, id, expectedUpdatedAt);
+      const commit = decision.commits.at(-1);
+      if (decision.status !== 'decided' || !commit) throw new Error('Kun en besluttet beslutning kan reviewes.');
+      if (decision.reviews.length >= DECISION_LIMITS.reviews) throw new Error('Maksimalt 100 reviews. Eksportér historikken; intet slettes automatisk.');
+      const timestamp = nextTimestamp(decision.updatedAt);
+      decision.reviews.push({ ...structuredClone(input), outcome: input.outcome.trim(), id: crypto.randomUUID(), commitId: commit.id, createdAt: timestamp });
+      decision.updatedAt = timestamp;
+      this.record(data, 'decision.reviewed', `Review: ${decision.title}`, undefined, id);
+      if (input.action !== 'keep') {
+        decision.status = input.action === 'reopen' ? 'draft' : 'closed';
+        this.record(data, input.action === 'reopen' ? 'decision.reopened' : 'decision.closed', `${input.action === 'reopen' ? 'Genåbnet' : 'Afsluttet'} efter review: ${decision.title}`, undefined, id);
+      }
+      return decision;
+    });
+  }
+
+  deleteDecision(id: string, expectedUpdatedAt: string): Result<void> {
+    return this.transaction(data => {
+      const decision = this.currentDecision(data, id, expectedUpdatedAt);
+      data.decisions = data.decisions.filter(item => item.id !== id);
+      this.record(data, 'decision.deleted', `Slettet: ${decision.title}`, undefined, id);
     });
   }
 
@@ -168,7 +276,12 @@ export class AppStore {
   }
 
   inspect(): Result<AppData> {
-    try { return { ok: true, value: parseData(this.storage().getItem(this.key)) }; }
+    try {
+      if (this.loadBlocked) throw new Error(this.snapshot.error ?? 'Lagringen er blokeret.');
+      const document = readDocument(this.storage().getItem(this.key));
+      if (document.migrated) throw new Error('Schema 1 er endnu ikke opgraderet på enheden. Genåbn appen for at gennemføre migrationen.');
+      return { ok: true, value: document.data };
+    }
     catch (error) { return { ok: false, error: message(error) }; }
   }
 
@@ -203,7 +316,7 @@ export class AppStore {
       if (!status.snapshot) throw new Error('Der findes endnu ikke et recovery-snapshot.');
       // Invalid old primary bytes may be exported, but never restored as data.
       parseData(status.snapshot.rawPrimary);
-      return this.prepareImport(serializeBackup(status.snapshot.rawPrimary, status.snapshot.appVersion, this.key));
+      return this.prepareImport(serializeBackup(status.snapshot.rawPrimary, status.snapshot.appVersion, this.key, true));
     } catch (error) { return { ok: false, error: message(error) }; }
   }
 

@@ -21,20 +21,24 @@ export interface ProjectInput {
   status: ProjectStatus;
 }
 
-export const ACTIVITY_TYPES = ['command', 'project.created', 'project.updated', 'project.deleted'] as const;
+export const LEGACY_ACTIVITY_TYPES = ['command', 'project.created', 'project.updated', 'project.deleted'] as const;
+export const ACTIVITY_TYPES = [...LEGACY_ACTIVITY_TYPES, 'decision.created', 'decision.updated', 'decision.decided', 'decision.reopened', 'decision.reviewed', 'decision.closed', 'decision.archived', 'decision.deleted'] as const;
 export interface Activity {
   id: string;
   type: (typeof ACTIVITY_TYPES)[number];
   text: string;
   createdAt: string;
   projectId?: string;
+  decisionId?: string;
 }
 
 export interface AppData {
-  schemaVersion: 1;
+  schemaVersion: 2;
   revision: number;
   projects: Project[];
   activity: Activity[];
+  decisions: Decision[];
 }
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
+import type { Decision } from './decisions.ts';
