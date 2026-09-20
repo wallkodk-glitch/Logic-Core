@@ -1,6 +1,6 @@
-LOGIC CORE v0.1.1 — FILE TREE
+LOGIC CORE v0.1.2 — FILE TREE
 
-Komplet source-snapshot (filer i archive root):
+64 source-filer direkte i archive root:
 
 .github/workflows/deploy.yml
 .github/workflows/mobile-release.yml
@@ -67,34 +67,10 @@ tests/test_release.py
 tsconfig.json
 vite.config.ts
 
-Ændret/tilføjet siden den accepterede v0.1:
-
-.github/workflows/deploy.yml
-.github/workflows/mobile-release.yml
-.gitignore
+Ændret siden accepteret v0.1.1:
 README.md
 docs/FILE_TREE.txt
 docs/FOUNDATION_LOCK.md
 docs/VALIDATION.md
 package-lock.json
 package.json
-scripts/generate-mobile-workflow.py
-scripts/mobile-workflow.template.yml
-scripts/mobile_release.py
-scripts/package-release.py
-src/components/DataTools.tsx
-src/components/ExportButton.tsx
-src/pages/DiagnosticsPage.tsx
-src/pages/SettingsPage.tsx
-src/storage/backup.ts
-src/storage/context.tsx
-src/storage/recovery.ts
-src/storage/schema.ts
-src/storage/store.ts
-src/styles.css
-src/utils/download.ts
-tests/backup.test.ts
-tests/config.test.ts
-tests/fixtures/v0.1-backup.json
-tests/fixtures/v0.1-primary.json
-tests/test_release.py
