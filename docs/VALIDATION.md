@@ -1,100 +1,102 @@
-# v0.2.0 — Validation
+# v0.2.1 — Validation
 
-Validation i byggemiljøet; ikke en påstand om fysisk iPhone/GitHub acceptance.
-Udgangspunkt: accepteret v0.1.1 main 5294f5243fd5b5c8c7147c0d8fa6f78be40917ab,
-derefter fastlåst v0.1.2 source commit 7f1d70a. App 0.2.0, schema 2.
+App 0.2.1, schema 2. Accepteret baseline:
+516027d5a917541ceee76df7cf82d94eeb5792ed (v0.2.0).
+Resultaterne gælder faktisk kørte checks i byggemiljøet, ikke fysisk iPhone.
+Efter to afbrudte sessioner blev source kontrolleret og hele suiten kørt igen.
 
-## Udførte automatiske checks
+## Automatiske resultater
 
-| Check | Faktisk resultat |
+| Check | Resultat |
 | --- | --- |
-| npm ci --no-audit --no-fund | Exit 0; 26 locked packages |
-| npm test — Node | 141 PASS, 0 FAIL, 0 skipped |
-| npm test — Python release tests | 27 PASS, 0 FAIL |
-| Total automated tests | 168 PASS, 0 FAIL |
+| npm ci --no-audit --no-fund | Exit 0, 26 locked packages |
+| npm test — Node | 201 PASS, 0 FAIL, 0 skipped/cancelled |
+| npm test — Python release controller | 27 PASS, 0 FAIL |
+| Samlet testantal | **228 PASS, 0 FAIL** |
 | npm run typecheck | Exit 0 |
-| PAGES_BASE_PATH=/Logic-Core/ npm run build | Exit 0; 54 moduler |
-| PWA/build verifier | PASS; 10 app-shell URLs, korrekte assets, ikoner, manifest og worker |
-| Generator --check | PASS; workflow/controller/template konsistent |
-| Begge workflows | YAML parse + shell syntax + permissions + byte identity PASS |
-| Git diff whitespace check | PASS |
-| Eksisterende release-scripts / package-contract | Byte-identiske med accepteret baseline |
-| Manifest, registration, storage-key, base config | Byte-identiske med accepteret baseline |
+| PAGES_BASE_PATH=/Logic-Core/ npm run build | Exit 0, 62 moduler |
+| PWA/build verifier | PASS, 10 app-shell URLs, scope /Logic-Core/ |
+| Workflow/generator --check | PASS |
+| Workflow YAML + run-step shell syntax | PASS, begge YAML-filer og 12 shell-steps |
+| Protected workflow-byte-identitet | PASS |
+| Data/store/validation/backup/recovery | Uændrede bytes mod v0.2.0 |
+| Dependencies og lockfile | Kun app-version ændret; 0 nye/opgraderede dependencies |
+| git diff --check | PASS |
 
-Node 24.19.0, npm 11.9.0, Python 3.12.14. Ingen dependencies opgraderet.
-Build-output: index 1.34 kB; CSS 16.20 kB (gzip 4.32); JS 295.94 kB (gzip 90.32).
-PWA build hash: 20139b26ae753739; scope /Logic-Core/.
-Npm advarer om miljøets http-proxy-config; alle nævnte checks afsluttede med exit 0.
+Node 24.19.0, npm 11.9.0, Python 3.12.14.
+Build: index 5.58 kB (gzip 2.15), CSS 15.14 kB (gzip 3.85),
+JavaScript 298.49 kB (gzip 91.12). PWA build-hash: 6716e4c9046468dd.
+Miljøets npm http-proxy-advarsel påvirkede ikke exit-status. Ingen npm-opgradering.
 
-## Suiteopdeling
+## Eksakte suiter
 
-| Node-suite | Tests |
-| --- | ---: |
-| backup.test.ts | 43 |
-| config.test.ts | 3 |
-| decision-ui.test.ts | 3 |
-| decisions.test.ts | 25 |
-| migration.test.ts | 47 |
-| offline.test.ts | 6 |
-| storage.test.ts | 14 |
-| I alt | 141 |
+| Suite | PASS | FAIL |
+| --- | ---: | ---: |
+| backup.test.ts | 43 | 0 |
+| config.test.ts | 3 | 0 |
+| decision-ui.test.ts | 3 | 0 |
+| decisions.test.ts | 25 | 0 |
+| migration.test.ts | 47 | 0 |
+| offline.test.ts | 6 | 0 |
+| storage.test.ts | 14 | 0 |
+| workspace.test.ts | 13 | 0 |
+| update-controller.test.ts | 11 | 0 |
+| startup.test.ts | 7 | 0 |
+| worker-update.test.ts | 12 | 0 |
+| upgrade-v021.test.ts | 3 | 0 |
+| polish-ui.test.ts | 14 | 0 |
+| test_release.py | 27 | 0 |
+| **Total** | **228** | **0** |
 
-Eksisterende Project CRUD, Command/activity, stale writes, quota-fejl og recovery
-bevares. Legacy-forventninger er tilpasset den eksplicitte migration; den gamle
-v0.1 fixture er ikke ændret.
+Alle eksisterende testfiler og v0.1-fixtures er bevaret byte-identisk.
+60 nye tests supplerer de 168 eksisterende tests.
 
-Decision-tests dækker draft CRUD/reload, valg uden projekt, projekt-unlink,
-atomisk write failure, complete/incomplete/invalid scoring, ties, ingen criteria,
-manuelt valg af lavere score, decide/reopen/re-decide, immutable snapshots,
-append-only reviews, close/archive/delete, stale writers, due-datoer, tekst-/array-
-og historikgrænser samt 300-event-begrænsningen.
+Activity/recent: korrekte typer/routes, slettede targets, command expansion-target,
+Unicode/encoded IDs, stabil tie-sortering, max 3 og ingen mutation.
+Decision: samme validator/save-transaktion, valid/invalid input, ét contextual
+save-control, read-only besluttede inputs, historik og eksisterende stale/write checks.
 
-Migration-tests dækker pure v1→v2, bevarede projects/activity/revision, boot-write,
-read-only fejltilstand ved mislykket migration, unknown/corrupt schemas,
-schema 1-preview/restore, schema 2 roundtrip, v1 recovery og gamle pending journaler.
-36 malformed v2-varianter afvises både ved preview og ved write-boundary restore
-uden ændring af primary eller recovery.
+Startup: den faktisk leverede inline-script køres uden React i Node VM.
+Timeout, bundlefejl, unhandled rejection, successful mount, manuel reload,
+update-check, offline/legacy guidance og hung-request-timeout testes.
+Worker-template køres med isoleret Cache API/clients: ingen implicit skipWaiting,
+eksplicit message/ack, flere vinduer, fejlet activation, komplet/delvis/tom cache,
+Cache API-fejl og online fallback. Eksisterende offline-tests består uændret.
+Update-controller testes for begge eventrækkefølger, timeout, gamle replies,
+ugemte ændringer, deduplikerede tryk og ingen reload uden samtykke.
 
-React-renderingstests udfører de faktiske options-, scoring- og history-components:
-labels, escaping, stacked markup, beregnede signaler og bevaret historisk indhold.
-De tester ikke DOM-interaktioner, pixel-layout, keyboard eller touch.
+En syntetisk fixture er genereret af den uændrede v0.2.0 AppStore. v0.2.1 åbner
+den uden primary-write og bevarer projects, activities, decisions, scores,
+commits og reviews. Backup/recovery roundtrip og newer-schema read-only recovery
+testes uden sletning af brugerdata. Ingen rigtige brugerdata blev anvendt.
 
-Offline-tests udfører den faktiske worker-template i Node VM med fake Cache API:
-precache, scoped oprydning, cached app-shell/assets, afgrænsning til egen app og
-fejlet worker-installation uden sletning af gammel cache. Ikke en fysisk iOS-test.
+React-rendering udfører de faktiske komponenter for alle otte hovedskærme.
+Kun browser-/store-adaptere udskiftes i SSR-testen. Markup-tests beviser labels,
+links, disclosure-semantik, headings, actions og fejltekst; ikke touch/pixel-layout.
 
-## Release-controller og fejltilstande
+## Release-sikkerhed
 
-De eksisterende 27 Python-tests er uændrede og faktisk kørt. De dækker corrupt/
-missing ZIP, forkert root, alle required files, traversal/absolute paths,
-forbudte payloads, symlinks/special files, collisions, size cap, ugyldige/ens/lavere
-versioner, lockfile-mismatch, protected workflows, digest-mismatch, ændret stage,
-staging protection, rigtig lokal Git install/commit/push, push-rejection,
-concurrent main advance, metadata preservation og workflow permission/gate-order.
+27 eksisterende Python-tests dækker ZIP struktur og required files, corrupt ZIP,
+traversal/absolute paths, forbidden payloads, symlink/special files, collisions,
+size limits, equal/downgrade, package-lock mismatch, protected workflows, digest
+og staged-source mismatch, metadata protection, lokal Git commit/push samt
+push-rejection og concurrent main advance.
 
-Npm-install-, test-, TypeScript- og Vite-failure er beskyttet af normale fail-fast
-steps og install.needs: build; gate-rækkefølgen er testet/statisk auditeret.
-Faktiske fejl i GitHub-hosted npm/Pages-infrastruktur er ikke fremprovokeret her.
-Pages-deployment kan først ske efter build og install; den eksisterende live-app
-slettes ikke bevidst ved en tidligere fejl.
+Installerens gate-rækkefølge og permissions er statisk auditeret.
+Npm/test/typecheck/build-fejl kan ikke starte install/deploy. Den eksisterende
+live-version slettes ikke ved disse fejl. Faktiske fejl hos GitHub Pages blev
+ikke fremprovokeret.
 
-Den separate leveringsrapport indeholder SHA-256, archive-validation og resultater
-af lokal fuld sekvens v0.1.1 → ZIP A → v0.1.2 → ZIP B → v0.2.0.
-Ingen sådan simulation kaldes en rigtig GitHub Pages-deployment.
+Den separate RELEASE_REPORT_v0.2.1.md indeholder den endelige ZIP's checksum,
+filantal, archive-validering og resultat af en lokal komplet release-rehearsal
+fra v0.2.0. Rehearsal er ikke en GitHub-hosted deployment.
 
-## Kendte begrænsninger / fysisk acceptance
+## Statisk UI-audit og fysisk testgrænse
 
-Browser-runtime blev forsøgt mod lokal app, men returnerede
-net::ERR_BLOCKED_BY_CLIENT. Derfor **IKKE TESTET fysisk**:
+Alle hovedskærme er gennemgået for 320, 375, 390 og 430 CSS px. Auditdetaljer og
+acceptance findes i POLISH_FLOW.md. Browser-preview blev forsøgt, men browseren
+afviste lokal URL med ERR_BLOCKED_BY_CLIENT. Derfor er faktisk layout/overflow,
+iOS keyboard/safe-area, touch og landscape **ikke browser- eller fysisk testet**.
 
-- iPhone/Safari UI, 320 px overflow, touch og keyboard.
-- Service-worker upgrade på eksisterende installeret iPhone.
-- iOS Files download/import dialogs og faktisk lokal persistens efter OS-lukning.
-- Nye GitHub-hosted Actions-runs og Pages-publicering af A/B.
-
-Disse checks udføres af Jakob med README-checklisten efter ZIP-upload.
-Bevar pre-upgrade JSON i Filer, brug samme installerede app, og installér A før B.
-
-Andre grænser: manuelle draft-saves; én aktiv editor anbefales; ingen cloud-backup
-eller push reminders; iOS kan rydde lokal storage; immutable betyder app-adfærd,
-ikke kryptografisk autenticitet af importeret JSON. V0.1.x kan ikke læse schema 2.
+v0.2.1's GitHub-hosted Actions/Pages-run, iPhone Files-flow, fysisk persistence,
+offline reopen og opdatering af eksisterende Home Screen-PWA afventer Jakob.

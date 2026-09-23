@@ -1,0 +1,207 @@
+{
+  "schemaVersion": 2,
+  "revision": 4,
+  "projects": [
+    {
+      "id": "b1ed903f-8f77-42e7-ac07-096f1c093be6",
+      "title": "Eksempelprojekt fra v0.2.0",
+      "description": "Syntetisk regressionsfixture, ikke brugerdata.",
+      "status": "active",
+      "createdAt": "2026-09-20T21:45:52.885Z",
+      "updatedAt": "2026-09-20T21:45:52.885Z"
+    }
+  ],
+  "activity": [
+    {
+      "id": "cf890f2d-2042-4970-a3eb-3be628d14ee4",
+      "type": "command",
+      "text": "En bevaret command fra v0.2.0",
+      "createdAt": "2026-09-20T21:45:52.889Z"
+    },
+    {
+      "id": "527724e6-0d54-4a34-9c0e-b5e989b2e506",
+      "type": "decision.reviewed",
+      "text": "Review: Choose a direction",
+      "createdAt": "2026-09-20T21:45:52.888Z",
+      "decisionId": "0f39ce9c-52d0-4692-b1ba-586591d1e46a"
+    },
+    {
+      "id": "c58fbe28-34e3-4914-9d1d-abbee16798ab",
+      "type": "decision.decided",
+      "text": "Besluttet: Choose a direction",
+      "createdAt": "2026-09-20T21:45:52.887Z",
+      "decisionId": "0f39ce9c-52d0-4692-b1ba-586591d1e46a"
+    },
+    {
+      "id": "f68abb78-34d2-400e-944b-963c5bd526a7",
+      "type": "decision.created",
+      "text": "Oprettet: Choose a direction",
+      "createdAt": "2026-09-20T21:45:52.887Z",
+      "decisionId": "0f39ce9c-52d0-4692-b1ba-586591d1e46a"
+    },
+    {
+      "id": "4a9d2631-3229-4b2f-859b-f518d1ea379a",
+      "type": "project.created",
+      "text": "Oprettet: Eksempelprojekt fra v0.2.0",
+      "createdAt": "2026-09-20T21:45:52.886Z",
+      "projectId": "b1ed903f-8f77-42e7-ac07-096f1c093be6"
+    }
+  ],
+  "decisions": [
+    {
+      "title": "Choose a direction",
+      "goal": "Protect time",
+      "reality": "Limited capacity",
+      "constraints": "No PC",
+      "assumptions": "Phone stays available",
+      "options": [
+        {
+          "id": "e6151e9b-ab11-4cf9-883b-ef803159f169",
+          "title": "Build now",
+          "description": "",
+          "upside": "",
+          "downside": "",
+          "opportunityCost": "",
+          "reversibility": "moderate"
+        },
+        {
+          "id": "540ebe49-9ceb-4e86-b388-68e5e51b7331",
+          "title": "Wait",
+          "description": "",
+          "upside": "",
+          "downside": "",
+          "opportunityCost": "",
+          "reversibility": "moderate"
+        }
+      ],
+      "criteria": [
+        {
+          "id": "time",
+          "title": "Time",
+          "weight": 3
+        },
+        {
+          "id": "risk",
+          "title": "Risk",
+          "weight": 1
+        }
+      ],
+      "scores": [
+        {
+          "optionId": "e6151e9b-ab11-4cf9-883b-ef803159f169",
+          "criterionId": "time",
+          "score": 8
+        },
+        {
+          "optionId": "e6151e9b-ab11-4cf9-883b-ef803159f169",
+          "criterionId": "risk",
+          "score": 6
+        },
+        {
+          "optionId": "540ebe49-9ceb-4e86-b388-68e5e51b7331",
+          "criterionId": "time",
+          "score": 2
+        },
+        {
+          "optionId": "540ebe49-9ceb-4e86-b388-68e5e51b7331",
+          "criterionId": "risk",
+          "score": 4
+        }
+      ],
+      "rationale": "Wait deliberately",
+      "biggestRisk": "Delay",
+      "changeConditions": "Tools arrive",
+      "nextAction": "Schedule a check",
+      "selectedOptionId": "540ebe49-9ceb-4e86-b388-68e5e51b7331",
+      "linkedProjectId": "b1ed903f-8f77-42e7-ac07-096f1c093be6",
+      "id": "0f39ce9c-52d0-4692-b1ba-586591d1e46a",
+      "status": "decided",
+      "createdAt": "2026-09-20T21:45:52.887Z",
+      "updatedAt": "2026-09-20T21:45:52.888Z",
+      "commits": [
+        {
+          "id": "99548690-51bd-4b53-bd3a-008d3bab5cab",
+          "createdAt": "2026-09-20T21:45:52.887Z",
+          "snapshot": {
+            "title": "Choose a direction",
+            "goal": "Protect time",
+            "reality": "Limited capacity",
+            "constraints": "No PC",
+            "assumptions": "Phone stays available",
+            "options": [
+              {
+                "id": "e6151e9b-ab11-4cf9-883b-ef803159f169",
+                "title": "Build now",
+                "description": "",
+                "upside": "",
+                "downside": "",
+                "opportunityCost": "",
+                "reversibility": "moderate"
+              },
+              {
+                "id": "540ebe49-9ceb-4e86-b388-68e5e51b7331",
+                "title": "Wait",
+                "description": "",
+                "upside": "",
+                "downside": "",
+                "opportunityCost": "",
+                "reversibility": "moderate"
+              }
+            ],
+            "criteria": [
+              {
+                "id": "time",
+                "title": "Time",
+                "weight": 3
+              },
+              {
+                "id": "risk",
+                "title": "Risk",
+                "weight": 1
+              }
+            ],
+            "scores": [
+              {
+                "optionId": "e6151e9b-ab11-4cf9-883b-ef803159f169",
+                "criterionId": "time",
+                "score": 8
+              },
+              {
+                "optionId": "e6151e9b-ab11-4cf9-883b-ef803159f169",
+                "criterionId": "risk",
+                "score": 6
+              },
+              {
+                "optionId": "540ebe49-9ceb-4e86-b388-68e5e51b7331",
+                "criterionId": "time",
+                "score": 2
+              },
+              {
+                "optionId": "540ebe49-9ceb-4e86-b388-68e5e51b7331",
+                "criterionId": "risk",
+                "score": 4
+              }
+            ],
+            "rationale": "Wait deliberately",
+            "biggestRisk": "Delay",
+            "changeConditions": "Tools arrive",
+            "nextAction": "Schedule a check",
+            "selectedOptionId": "540ebe49-9ceb-4e86-b388-68e5e51b7331"
+          }
+        }
+      ],
+      "reviews": [
+        {
+          "outcome": "Testet på telefon",
+          "whatChanged": "Intet",
+          "lessons": "Bevar historikken",
+          "action": "keep",
+          "id": "5a59abf3-7518-4b52-82b2-7729c38ebc0d",
+          "commitId": "99548690-51bd-4b53-bd3a-008d3bab5cab",
+          "createdAt": "2026-09-20T21:45:52.888Z"
+        }
+      ]
+    }
+  ]
+}
+

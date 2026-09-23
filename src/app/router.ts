@@ -7,13 +7,11 @@ export function parseRoute(hash: string): Route {
   const path = hash.replace(/^#/, '') || '/';
   const routes: Record<string, Page> = { '/': 'command', '/projects': 'projects', '/decisions': 'decisions', '/opportunities': 'opportunities', '/knowledge': 'knowledge', '/settings': 'settings', '/diagnostics': 'diagnostics', '/more': 'more' };
   if (routes[path]) return { page: routes[path] };
-  const project = /^\/projects\/([\w-]+)$/.exec(path);
-  if (project?.[1]) return { page: 'project', id: project[1] };
-  const decision = /^\/decisions\/([^/]+)$/.exec(path);
-  if (decision?.[1]) {
+  const item = /^\/(projects|decisions)\/([^/]+)$/.exec(path);
+  if (item?.[2]) {
     try {
-      const id = decodeURIComponent(decision[1]);
-      if (id.trim() === id && id.length > 0 && id.length <= 128 && !/[\u0000-\u001f\u007f]/.test(id)) return { page: 'decision', id };
+      const id = decodeURIComponent(item[2]);
+      if (id.trim() === id && id.length > 0 && id.length <= 128 && !/[\u0000-\u001f\u007f]/.test(id)) return { page: item[1] === 'projects' ? 'project' : 'decision', id };
     } catch { /* Malformed imported/bookmarked routes fail safely. */ }
   }
   return { page: 'not-found' };

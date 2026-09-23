@@ -13,7 +13,7 @@ export function DecisionScoring({ content, onCriteria, onScores }: Props) {
     onScores(value === '' ? rest : [...rest, { optionId, criterionId, score: Number(value) }]);
   }
   return <>
-    <p className="notice">ANALYTICAL SIGNAL — dine vurderinger, ikke en automatisk anbefaling. Højere score betyder bedre match. Logic Core vælger aldrig for dig.</p>
+    <p className="field-help" aria-label="ANALYTICAL SIGNAL">Scoren er et analytisk signal ud fra dine vurderinger. Højere betyder bedre match. Du vælger selv.</p>
     <p className="field-help">Scoring er valgfri. Brug ingen kriterier, eller udfyld alle mulighed × kriterium-scores før “Beslut”. Vægt 1–5; score 1–10.</p>
     {content.criteria.map((criterion, index) => <div className="decision-card" key={criterion.id}>
       <DecisionField id={`criterion-${index}`} label={`Kriterium ${index + 1}`} value={criterion.title} singleLine maxLength={DECISION_LIMITS.title}
@@ -35,7 +35,7 @@ export function DecisionScoring({ content, onCriteria, onScores }: Props) {
     </div>)}
     <button type="button" className="button secondary" disabled={content.criteria.length >= DECISION_LIMITS.criteria} onClick={() => onCriteria([...content.criteria, { id: crypto.randomUUID(), title: '', weight: 3 }])}>Tilføj kriterium</button>
     {content.criteria.length > 0 && <div className="score-results" aria-label="Analytical signal">
-      <p className="eyebrow">VÆGTET SIGNAL · IKKE ET VALG</p>
+      <p className="section-caption">Vægtet vurdering</p>
       {content.options.map((option, index) => {
         const total = weightedScore(content, option.id);
         return <p key={option.id}><span>{option.title || `Mulighed ${index + 1}`}</span><strong>{total === null ? 'Ufuldstændig' : `${total.toFixed(2)} / 10`}</strong></p>;

@@ -1,3 +1,4 @@
+import { useUnsavedWork } from '../app/useUnsavedWork.ts';
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../storage/context.tsx';
 import { APP_VERSION } from '../config.ts';
@@ -14,6 +15,7 @@ export function DataTools() {
   const [reading, setReading] = useState(false);
   const [deleteToken, setDeleteToken] = useState<string | null>(null);
   const generation = useRef(0);
+  useUnsavedWork(reading || prepared !== null || deleteToken !== null);
   useEffect(() => () => { generation.current++; }, []);
   const recovery = store.recoveryStatus();
 

@@ -1,3 +1,4 @@
+import { useUnsavedWork } from '../../app/useUnsavedWork.ts';
 import { useState } from 'react';
 import type { Decision, ReviewInput } from '../../domain/decisions.ts';
 import { REVIEW_ACTIONS, REVIEW_LABELS } from '../../domain/decisions.ts';
@@ -8,6 +9,7 @@ export function DecisionReview({ decision, stale, onSaved }: { decision: Decisio
   const { store } = useStore();
   const [input, setInput] = useState<ReviewInput>({ outcome: '', whatChanged: '', lessons: '', action: 'keep' });
   const [notice, setNotice] = useState('');
+  useUnsavedWork(!!(input.outcome || input.whatChanged || input.lessons || input.action !== 'keep'));
   return <section className="decision-section review-form"><h2>Review · resultat og læring</h2>
     <p className="field-help">Review tilføjes til det seneste snapshot. Det ændrer ikke, hvad du troede dengang.</p>
     <form className="project-form" onSubmit={event => {

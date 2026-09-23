@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
-    <meta name="theme-color" content="#0b1014" />
+    <meta name="theme-color" content="#101113" />
     <meta name="color-scheme" content="dark" />
     <meta name="description" content="Logic Core. Dit mobile rum til projekter, beslutninger og idéer." />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -13,11 +13,78 @@
     <link rel="apple-touch-icon" href="%BASE_URL%icons/apple-touch-icon.png" />
     <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
     <title>Logic Core</title>
+    <style>
+      html { color-scheme: dark; background: #101113; color: #edeef0; }
+      body { margin: 0; }
+      .startup { box-sizing: border-box; max-width: 480px; margin: auto; padding: max(48px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(32px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left)); font: 16px/1.6 -apple-system, BlinkMacSystemFont, system-ui, sans-serif; overflow-wrap: anywhere; }
+      .startup h1 { font-size: 28px; line-height: 1.2; letter-spacing: -.03em; }
+      .startup p { color: #a6abb0; }
+      .startup button { display: block; width: 100%; min-height: 48px; margin: 12px 0; padding: 12px; border: 0; border-radius: 12px; background: #c4d5c7; color: #172019; font: inherit; }
+      .startup button + button { background: #24272b; color: #edeef0; }
+      .startup button:focus-visible { outline: 2px solid #c4d5c7; outline-offset: 3px; }
+      .startup[hidden], .startup [hidden] { display: none; }
+    </style>
   </head>
   <body>
-    <div id="root">
-      <p style="color:#b2fac8;font:16px system-ui;padding:32px;background:#0b1014">Starter Logic Core…</p>
-    </div>
+      <main id="startup-screen" class="startup" aria-labelledby="startup-title">
+        <h1 id="startup-title" tabindex="-1">Logic Core</h1>
+        <p id="startup-status" role="status">Åbner dit arbejdsrum…</p>
+        <div id="startup-recovery" hidden>
+          <p>En app-opdatering eller en afbrudt indlæsning kan være årsagen. Denne skærm sletter eller nulstiller ikke dine lokale data.</p>
+          <button id="startup-reload" type="button">Genindlæs</button>
+          <button id="startup-update" type="button">Søg efter opdatering</button>
+          <p id="startup-guidance">Hvis det fortsætter: gå online, luk alle Logic Core-vinduer i Safari og på hjemmeskærmen, og åbn appen igen. Slet ikke appen eller browserdata.</p>
+        </div>
+      </main>
+    <div id="root"></div>
+    <script id="logic-core-startup">
+      // Independent of main JS/CSS, React, storage and schema parsing.
+      (() => {
+        let mounted = false;
+        const reveal = () => {
+          if (mounted) return;
+          const panel = document.getElementById('startup-recovery');
+          if (!panel) return;
+          panel.hidden = false;
+          document.getElementById('startup-title').textContent = 'Logic Core kunne ikke starte';
+          document.getElementById('startup-status').textContent = 'Prøv at genindlæse eller hente en app-opdatering.';
+        };
+        const timer = window.setTimeout(reveal, 12000);
+        const failed = event => {
+          if (event.type === 'unhandledrejection' || event.error || event.target?.tagName === 'SCRIPT') reveal();
+        };
+        window.addEventListener('error', failed, true);
+        window.addEventListener('unhandledrejection', failed);
+        window.addEventListener('logic-core:mounted', () => {
+          mounted = true; window.clearTimeout(timer);
+          document.getElementById('startup-screen').hidden = true;
+          window.removeEventListener('error', failed, true);
+          window.removeEventListener('unhandledrejection', failed);
+        }, { once: true });
+        document.getElementById('startup-reload').addEventListener('click', () => window.location.reload());
+        document.getElementById('startup-update').addEventListener('click', async () => {
+          const status = document.getElementById('startup-status');
+          const button = document.getElementById('startup-update');
+          button.disabled = true;
+          status.textContent = 'Søger efter opdatering…';
+          let timeout;
+          try {
+            if (!navigator.onLine || !('serviceWorker' in navigator)) throw new Error('unavailable');
+            await Promise.race([
+              (async () => {
+                const registration = await navigator.serviceWorker.getRegistration(new URL('%BASE_URL%', window.location.origin).href);
+                if (!registration) throw new Error('unregistered');
+                await registration.update();
+              })(),
+              new Promise((_, reject) => { timeout = window.setTimeout(() => reject(new Error('timeout')), 8000); }),
+            ]);
+            status.textContent = 'Opdatering søgt. Luk nu alle Logic Core-vinduer, og åbn igen. Nye workers kan vente på, at alle vinduer lukkes.';
+          } catch {
+            status.textContent = 'Forbind dig til nettet, og prøv igen. Luk derefter alle Logic Core-vinduer og genåbn.';
+          } finally { window.clearTimeout(timeout); button.disabled = false; }
+        });
+      })();
+    </script>
     <noscript>Logic Core kræver JavaScript. Aktivér JavaScript i Safari, og åbn siden igen.</noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>

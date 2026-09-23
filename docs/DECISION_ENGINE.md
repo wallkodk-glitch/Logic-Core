@@ -1,4 +1,4 @@
-# Decision Engine v0.2.0 — model og arkitektur
+# Decision Engine — model fra v0.2.0, UI v0.2.1
 
 ## Hvad betyder dataene?
 
@@ -90,8 +90,11 @@ eksisterende journal håndterer afbrudt restore/finalisering. Ingen ny journalmo
 
 Hash-routes: #/decisions, #/decisions/new, #/decisions/:id.
 Decisions forbliver under Mere. Liste har search, statusfilter og due-filter.
-Editorens syv sektioner, labels, stacked score-cards og actions i dokumentflowet
-bevarer eksisterende safe-area/keyboard-arkitektur; ingen desktop score-matrix.
+Editorens syv sektioner kan foldes sammen; første sektion er åben. Labels og
+stacked score-cards er bevaret; ingen desktop score-matrix. v0.2.1 samler draft-
+handlinger i én mobil sticky action area ved toppen. Den bliver statisk ved
+åbent keyboard, lav landscape-skærm og tablet/desktop. Samme save-transaktion
+og validation bruges; ingen autosave eller nye persisted fields.
 Date-input bliver slutningen af valgt dag i enhedens tidszone, gemt som UTC.
 Due vises kun for decided uden et review af samme commit på/efter due-tidspunkt.
 Ingen push-notifikation. Due-opdatering sker hvert minut og ved genaktivering.

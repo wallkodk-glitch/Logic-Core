@@ -30,7 +30,7 @@ export function App() {
     case 'settings': content = <SettingsPage />; break;
     case 'diagnostics': content = <DiagnosticsPage />; break;
     case 'more': content = <MorePage />; break;
-    default: content = <><PageHeader eyebrow="LOGIC CORE" title="Siden findes ikke" /><a className="button" href="#/">Til Command</a></>;
+    default: content = <><PageHeader title="Siden findes ikke" /><a className="button" href="#/">Til Command</a></>;
   }
   return <AppShell page={route.page}>{content}</AppShell>;
 }

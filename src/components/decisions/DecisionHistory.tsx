@@ -30,7 +30,7 @@ export function DecisionHistory({ decision }: { decision: Decision }) {
     })}
     {[...decision.reviews].reverse().map((review, index) => <details className="decision-section" key={review.id}>
       <summary>Review {decision.reviews.length - index} · {REVIEW_LABELS[review.action]} · {formatTime(review.createdAt)}</summary>
-      <p className="eyebrow">TIL SNAPSHOT {decision.commits.findIndex(commit => commit.id === review.commitId) + 1}</p>
+      <p className="section-caption">Snapshot {decision.commits.findIndex(commit => commit.id === review.commitId) + 1}</p>
       <dl className="belief-list"><div><dt>Hvad skete der?</dt><dd>{review.outcome}</dd></div><div><dt>Hvad ændrede sig?</dt><dd>{review.whatChanged || 'Ikke angivet'}</dd></div><div><dt>Læring</dt><dd>{review.lessons || 'Ikke angivet'}</dd></div></dl>
     </details>)}
   </section>;
