@@ -1,102 +1,93 @@
-# v0.2.1 — Validation
+# v0.3.0 — Validation
 
-App 0.2.1, schema 2. Accepteret baseline:
-516027d5a917541ceee76df7cf82d94eeb5792ed (v0.2.0).
-Resultaterne gælder faktisk kørte checks i byggemiljøet, ikke fysisk iPhone.
-Efter to afbrudte sessioner blev source kontrolleret og hele suiten kørt igen.
+App **0.3.0**, schema **3**. Baseline v0.2.1:
+`5df92a0b2c326ff1047caeb1fccd461c8aeb17f6`.
+Checks nedenfor er faktisk kørt i byggemiljøet. Fysisk iPhone-acceptance er separat.
 
-## Automatiske resultater
+## Fresh automated verification
 
 | Check | Resultat |
 | --- | --- |
-| npm ci --no-audit --no-fund | Exit 0, 26 locked packages |
-| npm test — Node | 201 PASS, 0 FAIL, 0 skipped/cancelled |
-| npm test — Python release controller | 27 PASS, 0 FAIL |
-| Samlet testantal | **228 PASS, 0 FAIL** |
+| npm ci --no-audit --no-fund | Exit 0; 26 locked packages |
+| npm test — Node | 332 PASS, 0 FAIL, 0 skipped, 0 cancelled, 0 todo |
+| npm test — Python release controller | 27 PASS, 0 FAIL, 0 skipped |
+| **Samlet** | **359 PASS, 0 FAIL, 0 skipped** |
 | npm run typecheck | Exit 0 |
-| PAGES_BASE_PATH=/Logic-Core/ npm run build | Exit 0, 62 moduler |
-| PWA/build verifier | PASS, 10 app-shell URLs, scope /Logic-Core/ |
+| PAGES_BASE_PATH=/Logic-Core npm run build | Exit 0; inkluderer typecheck |
+| Vite | 80 modules, production target safari16.4 |
+| PWA/build verifier | PASS; 11 app-shell URLs; /Logic-Core/ |
 | Workflow/generator --check | PASS |
-| Workflow YAML + run-step shell syntax | PASS, begge YAML-filer og 12 shell-steps |
-| Protected workflow-byte-identitet | PASS |
-| Data/store/validation/backup/recovery | Uændrede bytes mod v0.2.0 |
-| Dependencies og lockfile | Kun app-version ændret; 0 nye/opgraderede dependencies |
-| git diff --check | PASS |
+| YAML syntax / run-step bash -n | PASS; 2 workflows, 12 shell-steps |
+| Protected workflow/controller/template/generator/packager bytes | Identiske med accepteret v0.2.1 |
+| Dependency diff | 0 nye/opgraderede dependencies; kun package/appversion |
 
-Node 24.19.0, npm 11.9.0, Python 3.12.14.
-Build: index 5.58 kB (gzip 2.15), CSS 15.14 kB (gzip 3.85),
-JavaScript 298.49 kB (gzip 91.12). PWA build-hash: 6716e4c9046468dd.
-Miljøets npm http-proxy-advarsel påvirkede ikke exit-status. Ingen npm-opgradering.
+Node **24.19.0**, npm **11.9.0**, Python **3.12.14**.
+Vite output: index 5.58 kB (gzip 2.15), CSS 16.09 kB (gzip 4.03), JS 336.16 kB
+(gzip 100.41). PWA build-hash: **3c650ec7e7fba49e**. Npm's miljøspecifikke
+http-proxy-advarsel ændrede ikke exit-status; ingen npm-opgradering blev foretaget.
 
-## Eksakte suiter
+## Regression og nye cases
 
-| Suite | PASS | FAIL |
-| --- | ---: | ---: |
-| backup.test.ts | 43 | 0 |
-| config.test.ts | 3 | 0 |
-| decision-ui.test.ts | 3 | 0 |
-| decisions.test.ts | 25 | 0 |
-| migration.test.ts | 47 | 0 |
-| offline.test.ts | 6 | 0 |
-| storage.test.ts | 14 | 0 |
-| workspace.test.ts | 13 | 0 |
-| update-controller.test.ts | 11 | 0 |
-| startup.test.ts | 7 | 0 |
-| worker-update.test.ts | 12 | 0 |
-| upgrade-v021.test.ts | 3 | 0 |
-| polish-ui.test.ts | 14 | 0 |
-| test_release.py | 27 | 0 |
-| **Total** | **228** | **0** |
+Den accepterede baseline blev først kørt uændret: 201 Node + 27 Python = 228 PASS.
+Alle gamle cases er bevaret. Schema-afhængige forventninger er flyttet fra current 2 /
+future 3 til current 3 / future 4. Gamle v0.1/v0.2-fixtures er uændrede.
+**131 nye Node-cases** supplerer regressionerne.
 
-Alle eksisterende testfiler og v0.1-fixtures er bevaret byte-identisk.
-60 nye tests supplerer de 168 eksisterende tests.
+- Migration: v1 → v2 → v3 og v2 → v3, eksakte eksisterende records/revision/commits/
+  reviews, determinisme, idempotens og raw preservation ved failed write.
+- Opportunity: exact shapes, IDs, enums, dates, ranges, unikke keys/refs, foreign keys,
+  tekst/array/byte-bounds, CRUD, monotone timestamps, stale/quota/reload og history.
+- Bridge: single/batch, preview uden writes, explicit confirmation, malformed/future/
+  partial batch, caps, duplicate keys, canonical duplicates, metadata-only duplicates,
+  ny version, lokale felter/links bevaret og atomic failure. Det downloadbare eksempel
+  testes gennem den faktiske preview/import-kontrakt.
+- Source snapshots: deepFreeze, immutable tidligere bytes og ingen dubletter; ingen
+  statusvalg fra signal. Signal-formel, null ved inkomplet input og risiko-invertering.
+- Relations: atomisk cleanup ved Project/Decision-delete; Opportunity-delete bevarer
+  andre entities; draft/opportunity-backlink i samme write, ingen automatisk selection.
+- Derived: Drift på konkrete commit-felter, first/latest, reviews/due og ingen mutation;
+  Attention og Fortsæt har deterministisk sortering, caps og statusfiltrering.
+- Navigation: alle dirty-ejere, confirm/cancel, route-state, one-prompt, hashchange/back,
+  actual router event binding, internal/external links og beforeunload.
+- Backup/recovery: schema 1/2/3, preview-count, invalid Opportunities før write, recovery
+  med Opportunities, quotas/stale/journal og eksisterende roundtrips.
+- UI: React SSR af eksisterende og nye skærme, links, actions, plain text escaping,
+  source history, activity-classification og H1-regression med startup + app markup.
 
-Activity/recent: korrekte typer/routes, slettede targets, command expansion-target,
-Unicode/encoded IDs, stabil tie-sortering, max 3 og ingen mutation.
-Decision: samme validator/save-transaktion, valid/invalid input, ét contextual
-save-control, read-only besluttede inputs, historik og eksisterende stale/write checks.
+H1-testen blev kontrolleret ved midlertidigt at genindføre den gamle globale selector:
+den fejlede, fordi startup-heading fik focus. Den scoped selector består.
 
-Startup: den faktisk leverede inline-script køres uden React i Node VM.
-Timeout, bundlefejl, unhandled rejection, successful mount, manuel reload,
-update-check, offline/legacy guidance og hung-request-timeout testes.
-Worker-template køres med isoleret Cache API/clients: ingen implicit skipWaiting,
-eksplicit message/ack, flere vinduer, fejlet activation, komplet/delvis/tom cache,
-Cache API-fejl og online fallback. Eksisterende offline-tests består uændret.
-Update-controller testes for begge eventrækkefølger, timeout, gamle replies,
-ugemte ændringer, deduplikerede tryk og ingen reload uden samtykke.
+Auditen fandt også, at en invalid Bridge ved commit ellers kunne nå transaction-
+housekeeping før JSON-parse. Regressionstesten fejlede med en pending recovery-journal.
+Parse sker nu før transaction; ugyldig JSON lader både primary og recovery stå urørt.
+Recovery-journalens egen implementation er byte-identisk med baseline.
 
-En syntetisk fixture er genereret af den uændrede v0.2.0 AppStore. v0.2.1 åbner
-den uden primary-write og bevarer projects, activities, decisions, scores,
-commits og reviews. Backup/recovery roundtrip og newer-schema read-only recovery
-testes uden sletning af brugerdata. Ingen rigtige brugerdata blev anvendt.
+## PWA og release
 
-React-rendering udfører de faktiske komponenter for alle otte hovedskærme.
-Kun browser-/store-adaptere udskiftes i SSR-testen. Markup-tests beviser labels,
-links, disclosure-semantik, headings, actions og fejltekst; ikke touch/pixel-layout.
+Alle eksisterende offline/startup/worker/update-controller tests er bevaret og genkørt.
+De udfører leveret startup-script/worker i isolerede adapters og tester explicit ACK,
+one-window, dirty block, timeout, late replies, controllerchange-rækkefølge og én reload.
+Ingen tests rydder brugerdata; fixtures bruger isoleret MemoryStorage.
 
-## Release-sikkerhed
+Python-controllerens 27 cases dækker archive/root/traversal/corruption, required files,
+symlinks/collisions, bounds, equal/downgrade, lockfile mismatch, protected workflows,
+digest/source mismatch, metadata, lokal Git commit/push, push-rejection og main advance.
+Workflow permissions/gates/triggers er desuden statisk auditeret. Ingen pipeline-refactor.
 
-27 eksisterende Python-tests dækker ZIP struktur og required files, corrupt ZIP,
-traversal/absolute paths, forbidden payloads, symlink/special files, collisions,
-size limits, equal/downgrade, package-lock mismatch, protected workflows, digest
-og staged-source mismatch, metadata protection, lokal Git commit/push samt
-push-rejection og concurrent main advance.
+Den separate **RELEASE_REPORT_v0.3.0.md** indeholder checksum/filantal, endelig archive-
+validation, build-filhases og den konkrete staged release-rehearsal fra v0.2.1.
+En lokal Git rehearsal er ikke en GitHub-hosted Pages-deployment.
 
-Installerens gate-rækkefølge og permissions er statisk auditeret.
-Npm/test/typecheck/build-fejl kan ikke starte install/deploy. Den eksisterende
-live-version slettes ikke ved disse fejl. Faktiske fejl hos GitHub Pages blev
-ikke fremprovokeret.
+## Statisk UI-review og fysisk grænse
 
-Den separate RELEASE_REPORT_v0.2.1.md indeholder den endelige ZIP's checksum,
-filantal, archive-validering og resultat af en lokal komplet release-rehearsal
-fra v0.2.0. Rehearsal er ikke en GitHub-hosted deployment.
+Command, Projects/list/editor, Decisions/list/editor, More, Settings, Diagnostics og
+Opportunity/list/editor/Bridge er gennemgået for responsive struktur ved 320, 375,
+390 og 430 CSS px: min-width:0, wrapping, 16px form-inputs, 44–48px targets, safe-area,
+keyboard/landscape sticky-regler, disclosures og reduced motion. Intet globalt overflow
+hidden er tilføjet. Dette er statisk audit, ikke målt browserlayout.
 
-## Statisk UI-audit og fysisk testgrænse
-
-Alle hovedskærme er gennemgået for 320, 375, 390 og 430 CSS px. Auditdetaljer og
-acceptance findes i POLISH_FLOW.md. Browser-preview blev forsøgt, men browseren
-afviste lokal URL med ERR_BLOCKED_BY_CLIENT. Derfor er faktisk layout/overflow,
-iOS keyboard/safe-area, touch og landscape **ikke browser- eller fysisk testet**.
-
-v0.2.1's GitHub-hosted Actions/Pages-run, iPhone Files-flow, fysisk persistence,
-offline reopen og opdatering af eksisterende Home Screen-PWA afventer Jakob.
+Browser rendering blev forsøgt, men lokal preview-URL blev afvist med
+ERR_BLOCKED_BY_CLIENT. Faktisk pixel/overflow, iOS keyboard/safe-area, portrait/landscape,
+Files/download, VoiceOver og fysisk persistence er **pending**. GitHub Actions/Pages
+og v0.2.1 → v0.3.0 Home Screen-update afventer Jakobs upload og acceptance.
+Se docs/OPPORTUNITY_INTELLIGENCE.md og release-rapportens sekvens.

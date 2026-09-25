@@ -110,7 +110,7 @@ test('corrupt data remains untouched and can be exported for recovery', () => {
 
 test('future schemas block writes instead of downgrading data', () => {
   const { port } = fixture();
-  const raw = JSON.stringify({ schemaVersion: 3, future: 'preserve me' });
+  const raw = JSON.stringify({ schemaVersion: 4, future: 'preserve me' });
   port.setItem(key, raw);
   const store = new AppStore(() => port, key);
   assert.match(store.getSnapshot().error ?? '', /nyere/);

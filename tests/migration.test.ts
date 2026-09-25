@@ -13,9 +13,9 @@ const legacy: unknown = JSON.parse(legacyRaw);
 const recoveryKey = `${key}:recovery`;
 const legacySnapshot = (raw: string) => JSON.stringify({ recoveryVersion: 1, snapshot: { rawPrimary: raw, savedAt: '2026-01-01T00:00:00.000Z', appVersion: '0.1.2' } });
 
-test('fresh schema 2 document has projects, activity and decisions with no writes', () => {
+test('fresh schema 3 document has projects, activity and decisions with no writes', () => {
   const { store, port } = fixture(); assert.deepEqual(store.getSnapshot().data, emptyData());
-  assert.equal(store.getSnapshot().data.schemaVersion, 2); assert.deepEqual(store.getSnapshot().data.decisions, []); assert.equal(port.writes, 0);
+  assert.equal(store.getSnapshot().data.schemaVersion, 3); assert.deepEqual(store.getSnapshot().data.decisions, []); assert.equal(port.writes, 0);
 });
 test('v1 migration is deterministic, pure, and preserves exact logical projects/activity/revision', () => {
   const before = JSON.stringify(legacy);
@@ -24,9 +24,9 @@ test('v1 migration is deterministic, pure, and preserves exact logical projects/
   const original = JSON.parse(legacyRaw) as { projects: unknown; activity: unknown; revision: number };
   assert.equal(JSON.stringify(first.projects), JSON.stringify(original.projects));
   assert.equal(JSON.stringify(first.activity), JSON.stringify(original.activity));
-  assert.equal(first.revision, original.revision); assert.deepEqual(first.decisions, []); assert.equal(first.schemaVersion, 2);
+  assert.equal(first.revision, original.revision); assert.deepEqual(first.decisions, []); assert.equal(first.schemaVersion, 3);
 });
-test('v1 boot atomically persists v2 once without replacing existing recovery', () => {
+test('v1 boot atomically persists v3 once without replacing existing recovery', () => {
   const port = new MemoryStorage(); port.items.set(key, legacyRaw); const snapshot = legacySnapshot(legacyRaw); port.items.set(recoveryKey, snapshot);
   const store = new AppStore(() => port, key);
   assert.equal(store.getSnapshot().error, null); assert.equal(port.writes, 1); assert.equal(port.getItem(recoveryKey), snapshot);
@@ -37,33 +37,33 @@ test('migration write failure preserves raw v1 and shows read-only data instead 
   const port = new MemoryStorage(); port.items.set(key, legacyRaw); port.failWrite = true;
   const store = new AppStore(() => port, key);
   assert.equal(port.getItem(key), legacyRaw); assert(store.getSnapshot().error);
-  assert.equal(store.inspect().ok, false); // Diagnostics must not claim a persisted v2.
+  assert.equal(store.inspect().ok, false); // Diagnostics must not claim a persisted v3.
   assert.deepEqual(store.getSnapshot().data.projects, migrateData(legacy).projects);
   assert.equal(store.addCommand('must not write').ok, false); assert.equal(port.getItem(key), legacyRaw);
   port.failWrite = false; store.refresh(); assert.equal(store.getSnapshot().error, null);
   assert.equal(store.inspect().ok, true);
-  assert.equal(JSON.parse(port.getItem(key)!).schemaVersion, 2);
+  assert.equal(JSON.parse(port.getItem(key)!).schemaVersion, 3);
 });
 test('migration never repairs or resets malformed v1 or unknown schemas', () => {
-  for (const raw of ['{broken', '{"schemaVersion":1,"projects":[],"activity":[]}', JSON.stringify({ ...migrateData(legacy), schemaVersion: 1 }), '{"schemaVersion":3,"future":true}']) {
+  for (const raw of ['{broken', '{"schemaVersion":1,"projects":[],"activity":[]}', JSON.stringify({ ...migrateData(legacy), schemaVersion: 1 }), '{"schemaVersion":4,"future":true}']) {
     const port = new MemoryStorage(); port.items.set(key, raw); const snapshot = legacySnapshot(legacyRaw); port.items.set(recoveryKey, snapshot);
     const store = new AppStore(() => port, key); assert(store.getSnapshot().error);
     assert.equal(port.getItem(key), raw); assert.equal(port.getItem(recoveryKey), snapshot); assert.equal(port.writes, 0);
   }
 });
-test('v1 backup preview is read-only, explains migration, and restores atomically into v2', () => {
+test('v1 backup preview is read-only, explains migration, and restores atomically into v3', () => {
   const { store, port } = fixture(); create(store, true); const before = [...port.items];
   const prepared = ok(store.prepareImport(legacyExport));
-  assert.equal(prepared.preview.sourceSchemaVersion, 1); assert.equal(prepared.preview.schemaVersion, 2); assert.equal(prepared.preview.decisions, 0);
+  assert.equal(prepared.preview.sourceSchemaVersion, 1); assert.equal(prepared.preview.schemaVersion, 3); assert.equal(prepared.preview.decisions, 0);
   assert.deepEqual([...port.items], before);
   ok(store.restoreBackup(prepared, '0.2.0'));
   assert.deepEqual(store.getSnapshot().data, migrateData(legacy));
   assert.equal(store.recoveryStatus().snapshot?.rawPrimary, before[0]?.[1]);
 });
-test('schema 2 export/import round trip preserves commits, reviews and scores', () => {
+test('schema 3 export/import round trip preserves commits, reviews and scores', () => {
   const { store } = fixture(); let decision = ok(store.saveDecision(withScores(), undefined, undefined, true));
   decision = ok(store.reviewDecision(decision.id, { outcome: 'Review fact', whatChanged: 'Evidence', lessons: 'Lesson', action: 'keep' }, decision.updatedAt));
-  const exported = ok(store.exportData('0.2.0')); assert.equal(parseBackup(exported).preview.sourceSchemaVersion, 2);
+  const exported = ok(store.exportData('0.2.0')); assert.equal(parseBackup(exported).preview.sourceSchemaVersion, 3);
   const other = fixture(); ok(other.store.restoreBackup(ok(other.store.prepareImport(exported)), '0.2.0'));
   assert.deepEqual(other.store.getSnapshot().data, store.getSnapshot().data);
   assert.equal(other.store.getSnapshot().data.decisions[0]?.reviews[0]?.outcome, 'Review fact');
@@ -72,7 +72,7 @@ test('old v0.1.x recovery snapshot previews schema migration and restores into v
   const { store, port } = fixture(); create(store);
   const before = port.getItem(key); port.items.set(recoveryKey, legacySnapshot(legacyRaw)); store.refresh();
   assert.equal(store.recoveryStatus().snapshot?.rawPrimary, legacyRaw);
-  const prepared = ok(store.prepareRecovery()); assert.equal(prepared.preview.sourceSchemaVersion, 1); assert.equal(prepared.preview.schemaVersion, 2);
+  const prepared = ok(store.prepareRecovery()); assert.equal(prepared.preview.sourceSchemaVersion, 1); assert.equal(prepared.preview.schemaVersion, 3);
   ok(store.restoreBackup(prepared, '0.2.0'));
   assert.deepEqual(store.getSnapshot().data, migrateData(legacy)); assert.equal(store.recoveryStatus().snapshot?.rawPrimary, before);
 });
@@ -85,7 +85,7 @@ test('pending legacy journal is settled BEFORE boot migration and retains pre-re
   } }));
   const store = new AppStore(() => port, key);
   assert.equal(store.getSnapshot().error, null); assert.equal(store.recoveryStatus().pending, false);
-  assert.equal(store.recoveryStatus().snapshot?.rawPrimary, before); assert.equal(JSON.parse(port.getItem(key)!).schemaVersion, 2);
+  assert.equal(store.recoveryStatus().snapshot?.rawPrimary, before); assert.equal(JSON.parse(port.getItem(key)!).schemaVersion, 3);
 });
 test('failed legacy journal retains older recovery before migration', () => {
   const port = new MemoryStorage(); const after = JSON.stringify({ schemaVersion: 1, revision: 0, projects: [], activity: [] });
@@ -97,7 +97,7 @@ test('failed legacy journal retains older recovery before migration', () => {
   assert.equal(store.getSnapshot().error, null); assert.equal(store.recoveryStatus().snapshot?.rawPrimary, after);
   assert.deepEqual(store.getSnapshot().data, migrateData(legacy));
 });
-test('current schema parser refuses derived totals and does not rewrite valid schema 2 on boot', () => {
+test('current schema parser refuses derived totals and does not rewrite valid schema 3 on boot', () => {
   const { store, port } = fixture(); create(store, true); const raw = port.getItem(key)!; const writes = port.writes;
   const reopened = new AppStore(() => port, key); assert.equal(port.getItem(key), raw); assert.equal(port.writes, writes);
   const bad = structuredClone(reopened.getSnapshot().data); Object.assign(bad.decisions[0]!, { totalScore: 9 });
@@ -106,7 +106,7 @@ test('current schema parser refuses derived totals and does not rewrite valid sc
 
 const malformed: [string, (data: AppData) => void][] = [
   ['missing decisions array', data => { Reflect.deleteProperty(data, 'decisions'); }],
-  ['future schema', data => { Object.assign(data, { schemaVersion: 3 }); }],
+  ['future schema', data => { Object.assign(data, { schemaVersion: 4 }); }],
   ['missing decision field', data => { Reflect.deleteProperty(data.decisions[0]!, 'goal'); }],
   ['duplicate decision IDs', data => { data.decisions.push(structuredClone(data.decisions[0]!)); }],
   ['reserved route ID', data => { data.decisions[0]!.id = 'new'; }],
@@ -143,7 +143,7 @@ const malformed: [string, (data: AppData) => void][] = [
   ['decision activity without decision ID', data => { Reflect.deleteProperty(data.activity[0]!, 'decisionId'); }],
 ];
 for (const [label, mutate] of malformed) {
-  test(`invalid v2 ${label} rejects import and write-boundary restore without changing either key`, () => {
+  test(`invalid current-schema ${label} rejects import and write-boundary restore without changing either key`, () => {
     const { store, port } = fixture(); const decision = ok(store.saveDecision(withScores(), undefined, undefined, true));
     ok(store.reviewDecision(decision.id, { outcome: 'Observed', whatChanged: '', lessons: '', action: 'keep' }, decision.updatedAt));
     const valid = structuredClone(store.getSnapshot().data);

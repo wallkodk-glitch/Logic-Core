@@ -1,6 +1,6 @@
 import type { Activity, AppData, Project, ProjectInput, Result } from '../domain/types.ts';
 import { PROJECT_STATUSES } from '../domain/types.ts';
-import { ACTIVITY_LIMIT, emptyData, parseData, readDocument, validateData } from './schema.ts';
+import { ACTIVITY_LIMIT, SCHEMA_VERSION, emptyData, parseData, readDocument, validateData } from './schema.ts';
 import { parseBackup, serializeBackup } from './backup.ts';
 import type { PreparedRestore } from './backup.ts';
 import { parseRecovery, resolveRecovery, settleRecovery, writeRaw } from './recovery.ts';
@@ -9,6 +9,10 @@ import { DECISION_LIMITS, decisionContent, decisionInput, nextTimestamp } from '
 import type { Decision, DecisionInput, ReviewInput } from '../domain/decisions.ts';
 import { validateDecisionInput, validateReviewInput } from './decision-validation.ts';
 import { deepFreeze } from './validation.ts';
+import type { BridgeDocument, Opportunity, OpportunityInput } from '../domain/opportunities.ts';
+import type { PreparedBridge, BridgePreview } from './opportunity-bridge.ts';
+import { parseBridge, previewBridge } from './opportunity-bridge.ts';
+import { applyBridge, currentOpportunity, saveOpportunity, startOpportunityDecision } from './opportunity-operations.ts';
 
 export interface StoragePort {
   getItem(key: string): string | null;
@@ -72,7 +76,7 @@ export class AppStore {
       const { data, migrated } = readDocument(raw);
       if (migrated) {
         // Validate/migrate entirely before the single atomic primary write.
-        // Existing recovery is untouched. A failed write retains the original v1.
+        // Existing recovery is untouched. A failed write retains the original v1/v2.
         try {
           if (port.getItem(this.key) !== raw) throw new Error('Data blev ændret i et andet vindue under opgraderingen. Genåbn appen.');
           const upgraded = JSON.stringify(data);
@@ -81,7 +85,7 @@ export class AppStore {
         } catch (error) {
           this.raw = raw;
           this.loadBlocked = true;
-          this.publish(data, `Opgraderingen til schema 2 kunne ikke gemmes. Originale data er bevaret; redigering er blokeret. ${message(error)}`);
+          this.publish(data, `Opgraderingen til schema ${SCHEMA_VERSION} kunne ikke gemmes. Originale data er bevaret; redigering er blokeret. ${message(error)}`);
           return;
         }
       }
@@ -94,7 +98,7 @@ export class AppStore {
     }
   };
 
-  private transaction<T>(change: (data: AppData) => T): Result<T> {
+  private transaction<T>(change: (data: AppData) => T, skipUnchanged = false): Result<T> {
     try {
       if (this.loadBlocked) throw new Error(this.snapshot.error ?? 'Lagringen skal gendannes før ændringer.');
       const port = this.storage();
@@ -105,6 +109,7 @@ export class AppStore {
       }
       const next = structuredClone(this.snapshot.data);
       const value = change(next);
+      if (skipUnchanged && JSON.stringify(next) === JSON.stringify(this.snapshot.data)) return { ok: true, value: deepFreeze(value) };
       next.revision += 1;
       validateData(next);
       const raw = JSON.stringify(next);
@@ -120,10 +125,11 @@ export class AppStore {
     }
   }
 
-  private record(data: AppData, type: Activity['type'], text: string, projectId?: string, decisionId?: string): void {
+  private record(data: AppData, type: Activity['type'], text: string, projectId?: string, decisionId?: string, opportunityId?: string): void {
     const event: Activity = { id: crypto.randomUUID(), type, text, createdAt: new Date().toISOString() };
     if (projectId !== undefined) event.projectId = projectId;
     if (decisionId !== undefined) event.decisionId = decisionId;
+    if (opportunityId !== undefined) event.opportunityId = opportunityId;
     data.activity = [event, ...data.activity].slice(0, ACTIVITY_LIMIT);
   }
 
@@ -165,6 +171,7 @@ export class AppStore {
         }
       }
       this.record(data, 'project.deleted', `Slettet: ${project.title}`, id);
+      this.unlinkOpportunities(data, 'linkedProjectIds', id);
     });
   }
 
@@ -252,7 +259,65 @@ export class AppStore {
     return this.transaction(data => {
       const decision = this.currentDecision(data, id, expectedUpdatedAt);
       data.decisions = data.decisions.filter(item => item.id !== id);
+      this.unlinkOpportunities(data, 'linkedDecisionIds', id);
       this.record(data, 'decision.deleted', `Slettet: ${decision.title}`, undefined, id);
+    });
+  }
+
+  private unlinkOpportunities(data: AppData, field: 'linkedProjectIds' | 'linkedDecisionIds', id: string): void {
+    for (const opportunity of data.opportunities) {
+      if (!opportunity[field].includes(id)) continue;
+      opportunity[field] = opportunity[field].filter(value => value !== id);
+      opportunity.updatedAt = nextTimestamp(opportunity.updatedAt);
+      this.record(data, 'opportunity.updated', `Link fjernet: ${opportunity.title}`, undefined, undefined, opportunity.id);
+    }
+  }
+
+  saveOpportunity(input: OpportunityInput, id?: string, expectedUpdatedAt?: string): Result<Opportunity> {
+    return this.transaction(data => saveOpportunity(data, input,
+      (type, text, opportunityId) => this.record(data, type, text, undefined, undefined, opportunityId), id, expectedUpdatedAt));
+  }
+
+  deleteOpportunity(id: string, expectedUpdatedAt: string): Result<void> {
+    return this.transaction(data => {
+      const opportunity = currentOpportunity(data, id, expectedUpdatedAt);
+      data.opportunities = data.opportunities.filter(item => item.id !== id);
+      this.record(data, 'opportunity.deleted', `Slettet: ${opportunity.title}`, undefined, undefined, id);
+    });
+  }
+
+  prepareBridge(source: string): Result<PreparedBridge> {
+    try {
+      if (this.loadBlocked) throw new Error(this.snapshot.error ?? 'Lagringen er blokeret.');
+      const document = parseBridge(source);
+      if (this.storage().getItem(this.key) !== this.raw) throw new Error('Data er ændret i et andet vindue. Genåbn siden før import.');
+      const preview = previewBridge(document, this.snapshot.data.opportunities);
+      const next = structuredClone(this.snapshot.data);
+      applyBridge(next, document, () => {});
+      validateData(next); // Includes collection size and all references; no write.
+      return { ok: true, value: deepFreeze({ source, primaryAtPreview: this.raw, preview }) };
+    } catch (error) { return { ok: false, error: message(error) }; }
+  }
+
+  importBridge(prepared: PreparedBridge, confirmed: boolean): Result<BridgePreview> {
+    if (confirmed !== true) return { ok: false, error: 'Bekræft importen efter forhåndsvisning.' };
+    let document: BridgeDocument;
+    // Reject untrusted bytes before transaction housekeeping can touch recovery.
+    try { document = parseBridge(prepared.source); }
+    catch (error) { return { ok: false, error: message(error) }; }
+    return this.transaction(data => {
+      if (prepared.primaryAtPreview !== this.raw) throw new Error('Data er ændret siden forhåndsvisningen. Kontrollér importen igen.');
+      return applyBridge(data, document,
+        (type, text, opportunityId) => this.record(data, type, text, undefined, undefined, opportunityId));
+    }, true);
+  }
+
+  startOpportunityDecision(id: string, expectedUpdatedAt: string): Result<Decision> {
+    return this.transaction(data => {
+      const decision = startOpportunityDecision(data, id, expectedUpdatedAt);
+      this.record(data, 'decision.created', `Oprettet fra mulighed: ${decision.title}`, undefined, decision.id);
+      this.record(data, 'opportunity.updated', `Beslutningskladde tilknyttet: ${decision.title}`, undefined, undefined, id);
+      return decision;
     });
   }
 
@@ -279,7 +344,7 @@ export class AppStore {
     try {
       if (this.loadBlocked) throw new Error(this.snapshot.error ?? 'Lagringen er blokeret.');
       const document = readDocument(this.storage().getItem(this.key));
-      if (document.migrated) throw new Error('Schema 1 er endnu ikke opgraderet på enheden. Genåbn appen for at gennemføre migrationen.');
+      if (document.migrated) throw new Error('Et ældre schema er endnu ikke opgraderet på enheden. Genåbn appen for at gennemføre migrationen.');
       return { ok: true, value: document.data };
     }
     catch (error) { return { ok: false, error: message(error) }; }

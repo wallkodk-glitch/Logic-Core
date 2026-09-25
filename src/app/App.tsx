@@ -11,13 +11,16 @@ import { SettingsPage } from '../pages/SettingsPage.tsx';
 import { DiagnosticsPage } from '../pages/DiagnosticsPage.tsx';
 import { MorePage } from '../pages/MorePage.tsx';
 import { PageHeader } from '../components/PageHeader.tsx';
+import { focusRouteHeading } from './route-heading.ts';
+import { OpportunitiesPage } from '../pages/OpportunitiesPage.tsx';
+import { OpportunityEditorPage } from '../pages/OpportunityEditorPage.tsx';
+import { OpportunityBridgePage } from '../pages/OpportunityBridgePage.tsx';
 
 export function App() {
   const route = useRoute();
   useEffect(() => {
     window.scrollTo(0, 0);
-    document.querySelector<HTMLElement>('h1')?.focus({ preventScroll: true });
-    document.title = `${document.querySelector('h1')?.textContent ?? 'Command'} · Logic Core`;
+    focusRouteHeading(document);
   }, [route.page, route.id]);
   let content;
   switch (route.page) {
@@ -26,7 +29,10 @@ export function App() {
     case 'project': content = <ProjectEditorPage key={route.id} id={route.id ?? 'new'} />; break;
     case 'decisions': content = <DecisionsPage />; break;
     case 'decision': content = <DecisionEditorPage key={route.id} id={route.id ?? 'new'} />; break;
-    case 'opportunities': case 'knowledge': content = <PlaceholderPage page={route.page} />; break;
+    case 'opportunities': content = <OpportunitiesPage />; break;
+    case 'opportunity': content = <OpportunityEditorPage key={route.id} id={route.id ?? 'new'} />; break;
+    case 'opportunity-import': content = <OpportunityBridgePage />; break;
+    case 'knowledge': content = <PlaceholderPage page={route.page} />; break;
     case 'settings': content = <SettingsPage />; break;
     case 'diagnostics': content = <DiagnosticsPage />; break;
     case 'more': content = <MorePage />; break;

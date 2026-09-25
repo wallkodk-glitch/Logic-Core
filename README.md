@@ -1,68 +1,68 @@
-# Logic Core v0.2.1 — Polish & Flow
+# Logic Core v0.3.0
 
-App **0.2.1**, data **schema 2**. Bygget direkte på den fysisk accepterede v0.2.0.
-Roligere mobilflader, genveje til dit arbejde og bedre hjælp ved app-opdatering.
-Samme React/TypeScript/Vite-app, data og ZIP-release-system.
+App **0.3.0**, data **schema 3**. Bygget direkte på den fysisk accepterede v0.2.1.
+Opportunities får et lokalt arbejdsrum med immutable AI-kildeversioner. Decision
+Drift viser konkrete ændringer i dine allerede gemte beslutningsversioner.
+Ingen AI-tjenester kontaktes fra appen.
 
 ## Installer fra iPhone
 
-1. Gem gerne en JSON-backup fra Indstillinger i Filer før opdatering.
-2. Gem **logic-core-mobile-release.zip** i Filer uden at udpakke. Brug en separat
-   mappe, så filnavnet ikke får et ekstra tal.
-3. Safari → **wallkodk-glitch/Logic-Core** → repository root →
-   **Add file → Upload files → Browse** → vælg ZIP → **Commit to main**.
+1. Eksportér gerne en JSON-backup til Filer inden opdateringen.
+2. Gem **logic-core-mobile-release.zip** i en separat mappe i Filer. Udpak ikke;
+   filnavnet skal være præcis dette, uden `(1)` eller versionsnummer.
+3. Safari → **wallkodk-glitch/Logic-Core** → repository root → **Add file →
+   Upload files → Browse** → vælg ZIP → **Commit to main**.
 4. Actions → **Mobile release Logic Core** → vent på grøn build, install og deploy.
-   GitHub fjerner ZIP automatisk. Ingen andre filer skal uploades eller redigeres.
-5. Åbn din eksisterende PWA online. Gem arbejdet, luk alle Logic Core-vinduer i
-   Safari og på hjemmeskærmen, og genåbn. Gentag om nødvendigt ved denne første
-   opgradering fra den ældre worker. **Slet ikke appen eller browserdata.**
-6. Mere → Diagnostics: **0.2.1 / schema 2 / 8/8 PASS**. Kontrollér eksisterende data.
+   ZIP bliver fjernet automatisk. Ingen workflows eller sourcefiler skal redigeres.
+5. Åbn den **eksisterende** Home Screen-app online. Vent på **Opdatering klar**.
+   Gem/fjern ugemt arbejde, luk andre Logic Core-vinduer, og vælg
+   **Opdatér og genåbn**. Den kontrollerede opdatering må kun genindlæse én gang.
+6. Mere → Diagnostics: **0.3.0 / schema 3 / 8/8 PASS** online. Kontrollér eksisterende
+   Projects, Decisions, commits, reviews og aktivitet. Muligheder starter tomme.
 
-Safari kan kræve “Anmod om websted til computer” for at vise Upload-knappen.
-Live-adressen forbliver https://wallkodk-glitch.github.io/Logic-Core/.
+Safari kan kræve “Anmod om websted til computer” for Upload-knappen.
+Adressen forbliver https://wallkodk-glitch.github.io/Logic-Core/.
+Bevar installationen og browserdata under testen; sletning er ikke en update-løsning.
 
-## Hvad er nyt?
+## Brug muligheder
 
-- Tryk på projekt-/beslutningsaktivitet for at åbne kilden. Slettede elementer
-  bliver stående som historie uden et link. Commands kan foldes ud.
-- “Fortsæt” samler op til tre senest opdaterede projekter/beslutninger.
-- Færre labels, badges og dekorative flader. Systemtypografi og roligere navigation.
-- Kladder har én mobil handlingslinje: **Gem kladde**, samt **Beslut**, når input
-  er gyldigt. De syv sektioner kan foldes sammen. Ingen autosave.
-- Startfejl får en selvstændig hjælpeskærm efter 12 sekunder eller ved registreret
-  scriptfejl. Ingen automatisk sletning eller nulstilling af lokale data.
-- Fra v0.2.1 kan en ventende opdatering aktiveres med **Opdatér og genåbn**.
-  Gem først alle ændringer og luk andre app-vinduer. Ingen automatisk reload midt
-  i redigering. Ældre workers får vejledning i manuel luk/genåbn.
+Mere → Muligheder → **Importér fra AI**. Indsæt JSON eller vælg en JSON-fil,
+kontrollér preview, og bekræft. Et komplet eksempel kan hentes fra importskærmen.
+Se [Bridge-formatet](docs/OPPORTUNITY_BRIDGE.md) for et kopierbart AI-prompt og limits.
 
-Den nye startbeskyttelse virker først, når v0.2.1's HTML er hentet. Den kan ikke
-retroaktivt ændre en allerede cached v0.2.0-startskærm.
+Samme bridgeKey og ændret analyse tilføjer en kildeversion. Lokale felter bevares.
+Identisk analyse, også en tidligere version, giver ingen ekstra snapshot eller write.
+Manuel oprettelse, noter, status, tags, review-dato og links kræver ingen AI-import.
+Opportunity Signal er kun et manuelt, beregnet analysesignal. **Start beslutning**
+opretter en almindelig draft med kildehenvisning; intet alternativ vælges automatisk.
 
-## Data og beslutninger
+## Data, navigation og sikkerhed
 
-Schema, storage-key og PWA-installationsidentitet er uændrede. Ingen v0.2.1-migration.
-Eksisterende schema 2-data læses uden omskrivning. Gamle schema 1-backups bruger
-den eksisterende v1 → v2-migration ved restore. Restore erstatter hele datasættet.
+Schema 1 → 2 → 3 og schema 2 → 3 migrerer eksplicit. Eksisterende arrays, records,
+revisioner og timestamps bevares; opportunities tilføjes som []. Samme storage-key,
+origin, base path og PWA-identitet. Ukendt nyere/corrupt data bevares og blokerer writes.
+Backup-wrapper forbliver version 1; schema 1/2/3 kan previewes og restores til schema 3.
+Recovery-journal og atomisk primary-write er bevaret.
 
-Decision Engine bevarer dine input, dit manuelle valg, immutable snapshots og
-append-only reviews. Scoring er valgfri og beregner kun et analytisk signal.
-Genåbn en besluttet beslutning for at ændre den; gamle snapshots bevares.
+Intern navigation spørger, når der er kendt ugemt arbejde. Browser Back annulleres
+ved at gendanne den accepterede hash uden at unmount'e editoren. iOS kan ikke
+love et close-/force-quit-varsel; gem selv. Ingen autosave. Brug én aktiv editor.
 
-Ingen nye dependencies, backend, login, AI, telemetry, API keys eller cloud-sync.
-Gem kladder før navigation. Brug én aktiv editor; stale-write-kontrol er ikke
-en ægte tværgående browserlås. Bevar også en backup i Filer.
+Ingen nye dependencies, backend, login, cloud-sync, telemetry, API keys eller AI-runtime.
+Importerede tekster er plain text. Eksterne kilde-links åbnes kun ved dit tryk.
 
 ## Release-kontrakt
 
 Én root-snapshot ZIP: validate/stage → npm ci → tests → typecheck/build →
 asset/source-verifikation → install/bot-commit/remove ZIP → Pages deploy.
-Protected workflows, trusted installer, generator og setup-node-fix er uændrede.
+Protected workflows, trusted controller, generator og setup-node-fix er byte-identiske.
 
-Fejl før source-installation bevarer repository source og live-app; ZIP bliver.
-Push-fejl giver ingen deploy. Pages-fejl efter installation efterlader testet
-source committed og ZIP fjernet; retry via **Actions → Deploy Logic Core →
-Run workflow → main**. Samme/lavere version afvises.
+Fejl før installation bevarer source og live-app; ZIP bliver. Push-fejl giver ingen
+ny deploy. Pages-fejl efter installation efterlader testet source committed og ZIP
+fjernet; retry **Actions → Deploy Logic Core → Run workflow → main**.
+Samme/lavere version afvises. Ingen automatisk schema-downgrade.
 
-Læs [ændringer og fysisk acceptance](docs/POLISH_FLOW.md),
-[validation](docs/VALIDATION.md), [Foundation Lock](docs/FOUNDATION_LOCK.md),
-[Decision Engine](docs/DECISION_ENGINE.md) og [file tree](docs/FILE_TREE.txt).
+[Opportunity/Decision Intelligence og acceptance](docs/OPPORTUNITY_INTELLIGENCE.md) ·
+[Validation](docs/VALIDATION.md) · [Foundation Lock](docs/FOUNDATION_LOCK.md) ·
+[Decision Engine](docs/DECISION_ENGINE.md) · [File tree](docs/FILE_TREE.txt).
+Historiske v0.2.1-designnoter findes i docs/POLISH_FLOW.md.

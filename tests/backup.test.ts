@@ -50,7 +50,7 @@ test('v0.1 primary migrates at boot without changing projects, activities or rev
   assert.deepEqual(store.getSnapshot().data, migratedLegacy);
   assert.equal(port.getItem(key), migratedRaw);
   assert.equal(port.getItem(recoveryKey), null);
-  assert.equal(store.getSnapshot().data.schemaVersion, 2);
+  assert.equal(store.getSnapshot().data.schemaVersion, 3);
 });
 test('v0.1 JSON export and raw schema v1 both remain import-compatible', () => {
   assert.deepEqual(parseBackup(legacyBackup).data, migratedLegacy);
@@ -61,7 +61,7 @@ test('valid export previews counts/metadata without writing and restores the ent
   const { store, port } = fixture(); const before = [...port.items];
   const preview = prepare(store);
   assert.equal(preview.preview.projects, 1); assert.equal(preview.preview.activities, 2);
-  assert.equal(preview.preview.schemaVersion, 2); assert.equal(preview.preview.backupVersion, 1);
+  assert.equal(preview.preview.schemaVersion, 3); assert.equal(preview.preview.backupVersion, 1);
   assert.deepEqual([...port.items], before);
   assert(store.restoreBackup(preview, '0.1.1').ok);
   assert.deepEqual(store.getSnapshot().data, incomingData);
@@ -85,7 +85,7 @@ const invalid: [string, () => string][] = [
   ['rollover timestamp', () => JSON.stringify({ ...incomingData, activity: [{ ...incomingData.activity[0], createdAt: '2026-02-30T12:00:00.000Z' }] })],
   ['reversed project timestamps', () => JSON.stringify({ ...incomingData, projects: [{ ...incomingData.projects[0], updatedAt: '2000-01-01T00:00:00.000Z' }] })],
   ['negative revision', () => JSON.stringify({ ...incomingData, revision: -1 })],
-  ['future schema', () => JSON.stringify({ ...incomingData, schemaVersion: 3 })],
+  ['future schema', () => JSON.stringify({ ...incomingData, schemaVersion: 4 })],
   ['future backup format', () => JSON.stringify({ backupVersion: 2, data: incomingData })],
   ['unknown object fields', () => JSON.stringify({ ...incomingData, extra: true })],
   ['wrong metadata type', () => JSON.stringify({ data: incomingData, appVersion: 42 })],

@@ -1,11 +1,13 @@
 import type { Decision } from '../../domain/decisions.ts';
 import { REVIEW_LABELS, REVERSIBILITY_LABELS, weightedScore } from '../../domain/decisions.ts';
 import { formatTime } from '../../utils/format.ts';
+import { DecisionDrift } from './DecisionDrift.tsx';
 
 export function DecisionHistory({ decision }: { decision: Decision }) {
   return <section className="decision-history" aria-label="Uændret beslutningshistorik">
     <h2>Hvad troede jeg, da jeg besluttede?</h2>
     <p className="muted">Snapshots og reviews tilføjes; de redigeres aldrig i appen. {decision.commits.length} snapshots · {decision.reviews.length} reviews.</p>
+    <DecisionDrift decision={decision} />
     {[...decision.commits].reverse().map((commit, reversedIndex) => {
       const snapshot = commit.snapshot;
       return <details className="decision-section" key={commit.id}>

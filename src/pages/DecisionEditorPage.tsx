@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useStore } from '../storage/context.tsx';
 import { PageHeader } from '../components/PageHeader.tsx';
 import { Icon } from '../components/Icon.tsx';
@@ -10,7 +10,7 @@ import { DecisionReview } from '../components/decisions/DecisionReview.tsx';
 import { DECISION_LABELS, DECISION_LIMITS, decisionInput, isReviewDue, newDecisionInput, reviewDateFromInput, reviewDateInput } from '../domain/decisions.ts';
 import type { Decision, DecisionCriterion, DecisionInput, DecisionOption } from '../domain/decisions.ts';
 import { navigate } from '../app/router.ts';
-import { useUnsavedWork } from '../app/useUnsavedWork.ts';
+import { useUnsavedWork, usePendingWork } from '../app/useUnsavedWork.ts';
 import { canDecide } from '../domain/decision-actions.ts';
 import { useNow } from '../app/useNow.ts';
 import { errorText, formatTime } from '../utils/format.ts';
@@ -30,17 +30,13 @@ function DecisionEditor({ decision }: { decision: Decision | undefined }) {
   const [dirty, setDirty] = useState(!decision);
   const [notice, setNotice] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
-  useUnsavedWork(dirty);
+  const releaseWork = useUnsavedWork(dirty);
+  const pendingWork = usePendingWork();
+  const reviewDirty = pendingWork && !dirty;
   const readyToDecide = canDecide(input);
   const draft = !original || original.status === 'draft';
   const stale = !!original && decision?.updatedAt !== original.updatedAt;
 
-  useEffect(() => {
-    if (!dirty) return;
-    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
-    window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
-  }, [dirty]);
 
   function change(next: DecisionInput) { setInput(next); setDirty(true); setNotice(''); }
   function text(field: 'title' | 'goal' | 'reality' | 'constraints' | 'assumptions' | 'rationale' | 'biggestRisk' | 'changeConditions' | 'nextAction', value: string) {
@@ -62,7 +58,7 @@ function DecisionEditor({ decision }: { decision: Decision | undefined }) {
     change({ ...input, criteria, scores: input.scores.filter(score => ids.has(score.criterionId)) });
   }
   function accept(saved: Decision, message: string) {
-    setOriginal(saved); setInput(decisionInput(saved)); setDirty(false); setNotice(message); setConfirmDelete(false);
+    releaseWork(); setOriginal(saved); setInput(decisionInput(saved)); setDirty(false); setNotice(message); setConfirmDelete(false);
   }
   function save(decide = false) {
     const result = store.saveDecision(input, original?.id, original?.updatedAt, decide);
@@ -72,21 +68,21 @@ function DecisionEditor({ decision }: { decision: Decision | undefined }) {
   }
   function transition(action: 'reopen' | 'close' | 'archive') {
     if (!original) return;
-    if (dirty) { setNotice('Gem kladden, før du ændrer status.'); return; }
+    if (pendingWork) { setNotice('Gem det ugemte arbejde, før du ændrer status.'); return; }
     const label = action === 'reopen' ? 'Genåbn som kladde' : action === 'close' ? 'Afslut beslutningen' : 'Arkivér beslutningen';
     if (!window.confirm(`${label}? Historiske snapshots og reviews bevares.`)) return;
     const result = store.transitionDecision(original.id, action, original.updatedAt);
     if (result.ok) accept(result.value, 'Status ændret. Historikken er bevaret.'); else setNotice(result.error);
   }
   function remove() {
-    if (!original) return;
+    if (!original || reviewDirty) return;
     const result = store.deleteDecision(original.id, original.updatedAt);
-    if (result.ok) navigate('/decisions'); else setNotice(result.error);
+    if (result.ok) { releaseWork(); navigate('/decisions'); } else setNotice(result.error);
   }
 
 
   return <div className="decision-editor">
-    <a className="back-link" href="#/decisions" onClick={event => { if (dirty && !window.confirm('Forlad uden at gemme dine lokale ændringer?')) event.preventDefault(); }}><Icon name="back" size={16} />Beslutninger</a>
+    <a className="back-link" href="#/decisions"><Icon name="back" size={16} />Beslutninger</a>
     <PageHeader title={original ? original.title : 'Ny beslutning'} />
     <div className="project-topline"><span className={`badge status-${original?.status ?? 'draft'}`}>{DECISION_LABELS[original?.status ?? 'draft']}</span>{original && isReviewDue(original, now) && <span className="review-due">Review forfalder</span>}</div>
     <p className="field-help">{dirty ? 'Ikke gemt · gem kladden, før du går videre.' : `Gemt lokalt${original ? ` · ${formatTime(original.updatedAt)}` : ''}.`}</p>
@@ -139,8 +135,8 @@ function DecisionEditor({ decision }: { decision: Decision | undefined }) {
     {original && <>
       <DecisionHistory decision={original} />
       <section className="decision-section"><h2>Status og sletning</h2><p className="field-help">Arkivering og genåbning bevarer historik. Sletning fjerner beslutningen inklusive alle snapshots og reviews.</p>
-        <div className="form-actions">{original.status === 'decided' && <button type="button" className="button secondary" disabled={stale || dirty} onClick={() => transition('close')}>Afslut beslutning</button>}{original.status !== 'archived' && <button type="button" className="button secondary" disabled={stale || dirty} onClick={() => transition('archive')}>Arkivér</button>}</div>
-        {confirmDelete ? <div className="delete-confirm" role="group" aria-label="Bekræft sletning af beslutning"><p><strong>Slet “{original.title}” og hele dens historik permanent?</strong></p><p>Eksportér først en backup, hvis du vil bevare arbejdet.</p><div className="form-actions"><button type="button" className="button danger" disabled={stale} onClick={remove}>Slet beslutning permanent</button><button type="button" className="button secondary" onClick={() => setConfirmDelete(false)}>Behold beslutning</button></div></div> : <button type="button" className="danger-link" disabled={stale} onClick={() => setConfirmDelete(true)}>Slet beslutning</button>}
+        <div className="form-actions">{original.status === 'decided' && <button type="button" className="button secondary" disabled={stale || pendingWork} onClick={() => transition('close')}>Afslut beslutning</button>}{original.status !== 'archived' && <button type="button" className="button secondary" disabled={stale || pendingWork} onClick={() => transition('archive')}>Arkivér</button>}</div>
+        {confirmDelete ? <div className="delete-confirm" role="group" aria-label="Bekræft sletning af beslutning"><p><strong>Slet “{original.title}” og hele dens historik permanent?</strong></p><p>Eksportér først en backup, hvis du vil bevare arbejdet.</p><div className="form-actions"><button type="button" className="button danger" disabled={stale || reviewDirty} onClick={remove}>Slet beslutning permanent</button><button type="button" className="button secondary" onClick={() => setConfirmDelete(false)}>Behold beslutning</button></div></div> : <button type="button" className="danger-link" disabled={stale || reviewDirty} onClick={() => setConfirmDelete(true)}>Slet beslutning</button>}
       </section>
     </>}
   </div>;

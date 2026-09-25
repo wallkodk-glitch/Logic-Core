@@ -1,0 +1,38 @@
+{
+  "format": "logic-core-opportunity-bridge",
+  "bridgeVersion": 1,
+  "generatedAt": "2026-09-20T12:00:00.000Z",
+  "source": "Logic Opportunity Hunter · eksempel",
+  "items": [
+    {
+      "bridgeKey": "business:example-001",
+      "generatedAt": "2026-09-20T12:00:00.000Z",
+      "sourceRunId": "run-1",
+      "analysis": {
+        "title": "Eksempel: test en produktidé",
+        "domain": "Business",
+        "summary": "Afprøv om et konkret kundebehov findes.",
+        "thesis": "Et lille forsøg kan teste efterspørgslen før større investering.",
+        "evidence": [
+          "Eksempeldata: ét interview, endnu ikke tilstrækkelig evidens."
+        ],
+        "whyNow": "Ny feedback giver anledning til et lille forsøg.",
+        "upside": "Et produkt, der løser et konkret problem.",
+        "downside": "Tid kan bruges på en idé uden betalende kunder.",
+        "constraints": [
+          "Ingen PC"
+        ],
+        "assumptions": [
+          "Der findes efterspørgsel."
+        ],
+        "unknowns": [
+          "Betalingsvillighed"
+        ],
+        "nextTest": "Tal med fem mulige kunder.",
+        "sourceLinks": [
+          "https://example.com/research"
+        ]
+      }
+    }
+  ]
+}

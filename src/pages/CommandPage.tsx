@@ -7,6 +7,8 @@ import { PageHeader } from '../components/PageHeader.tsx';
 import { ActivityRow } from '../components/ActivityRow.tsx';
 import { activityTarget, recentWorkspace } from '../domain/workspace.ts';
 import { formatTime } from '../utils/format.ts';
+import { attentionItems } from '../domain/attention.ts';
+import { useNow } from '../app/useNow.ts';
 
 export function CommandPage() {
   const { store, data } = useStore();
@@ -14,6 +16,7 @@ export function CommandPage() {
   const [notice, setNotice] = useState('');
   useUnsavedWork(command.length > 0);
   const recent = recentWorkspace(data);
+  const attention = attentionItems(data, useNow());
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const result = store.addCommand(command);
@@ -28,11 +31,17 @@ export function CommandPage() {
       <div className="command-bottom"><span className="field-help">Kun på din enhed</span><button className="send-button" aria-label="Gem kommando" disabled={!command.trim()}><Icon name="arrow" size={20} /></button></div>
     </form>
     <p className="form-message" role="status">{notice}</p>
+    {!!attention.length && <section className="content-section" aria-labelledby="attention-title">
+      <div className="section-heading"><h2 id="attention-title">Kræver opmærksomhed</h2></div>
+      <ul className="workspace-list attention-list">{attention.map(item => <li key={item.key}><a className="workspace-row" href={item.href}>
+        <span className="workspace-copy"><strong>{item.title}</strong><span className="item-meta">{item.reason === 'opportunity-inbox' ? 'Mulighed i indbakken' : `${item.reason === 'decision-review' ? 'Beslutning' : 'Mulighed'} · review forfalder ${formatTime(item.at)}`}</span></span><Icon name="arrow" size={16} />
+      </a></li>)}</ul>
+    </section>}
     <section className="content-section" aria-labelledby="continue-title">
       <div className="section-heading"><h2 id="continue-title">Fortsæt</h2></div>
       {recent.length ? <ul className="workspace-list">{recent.map(item => <li key={item.key}>
         <a className="workspace-row" href={item.href}><span className="workspace-copy">
-          <strong>{item.title}</strong><span className="item-meta">{item.kind === 'project' ? 'Projekt' : 'Beslutning'} · {item.statusLabel} · <time dateTime={item.updatedAt}>{formatTime(item.updatedAt)}</time></span>
+          <strong>{item.title}</strong><span className="item-meta">{item.kind === 'project' ? 'Projekt' : item.kind === 'decision' ? 'Beslutning' : 'Mulighed'} · {item.statusLabel} · <time dateTime={item.updatedAt}>{formatTime(item.updatedAt)}</time></span>
         </span><Icon name="arrow" size={16} /></a>
       </li>)}</ul> : <p className="empty-log">Dit seneste arbejde vises her. <a className="text-link" href="#/projects/new">Opret et projekt</a></p>}
     </section>

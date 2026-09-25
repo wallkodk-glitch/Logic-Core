@@ -1,5 +1,7 @@
 # Decision Engine — model fra v0.2.0, UI v0.2.1
 
+> Historisk modelbeskrivelse. I v0.3.0 er AppData schema 3; normale backups eksporterer schema 3, og v1/v2 migrerer til 3. Decision-content/commit/review-semantik nedenfor er bevaret. Drift og Opportunity-links beskrives i OPPORTUNITY_INTELLIGENCE.md.
+
 ## Hvad betyder dataene?
 
 | Lag | Betydning |

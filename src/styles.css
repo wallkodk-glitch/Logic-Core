@@ -215,6 +215,19 @@ dd { margin: 0; min-width: 0; text-align: right; }
 .belief-list dd { margin: var(--s1) 0 0; text-align: left; white-space: pre-wrap; line-height: 1.6; }
 .history-score { margin-top: var(--s2); color: var(--muted); font-size: 14px; }
 .review-form .button { margin-top: var(--s4); }
+.opportunity-editor input, .opportunity-editor textarea, .opportunity-editor select { scroll-margin-block: 140px; }
+.source-list { margin-top: var(--s5); min-width: 0; }
+.source-list ul { margin: var(--s2) 0; padding-left: var(--s5); }
+.source-list li { margin-block: var(--s3); white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
+.source-list a { max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
+.link-options { border: 0; padding: 0; margin-top: var(--s5); min-width: 0; }
+.link-options legend { color: var(--muted); font-size: 14px; }
+.project-form .link-option { display: flex; align-items: center; gap: var(--s3); min-height: 48px; margin: var(--s2) 0; font-weight: 400; }
+.project-form .link-option input { width: 24px; height: 24px; min-height: 24px; flex: 0 0 24px; padding: 0; accent-color: var(--accent); }
+.link-option span { min-width: 0; overflow-wrap: anywhere; }
+.related-link { display: flex; overflow-wrap: anywhere; }
+.bridge-confirm, .start-decision { margin-top: var(--s4); }
+.drift-summary { margin-block: var(--s5); }
 .skip-link { position: fixed; left: var(--s4); top: -100px; z-index: 99; background: var(--accent); color: #172019; padding: var(--s3); border-radius: var(--radius); min-height: 44px; }
 .skip-link:focus { top: max(var(--s4), env(safe-area-inset-top)); }
 @media (min-width: 720px) {

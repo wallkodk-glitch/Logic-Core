@@ -10,7 +10,7 @@ import { usePwa } from '../pwa/register.ts';
 const nav: { href: string; label: string; icon: IconName; pages: Page[] }[] = [
   { href: '#/', label: 'Hjem', icon: 'command', pages: ['command'] },
   { href: '#/projects', label: 'Projekter', icon: 'projects', pages: ['projects', 'project'] },
-  { href: '#/opportunities', label: 'Muligheder', icon: 'opportunity', pages: ['opportunities'] },
+  { href: '#/opportunities', label: 'Muligheder', icon: 'opportunity', pages: ['opportunities', 'opportunity', 'opportunity-import'] },
   { href: '#/more', label: 'Mere', icon: 'more', pages: ['more', 'decisions', 'decision', 'knowledge', 'settings', 'diagnostics', 'not-found'] },
 ];
 

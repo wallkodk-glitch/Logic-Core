@@ -1,8 +1,6 @@
-Logic Core v0.2.1 — 95 source files; schema 2
-Full root snapshot. Excludes .git, node_modules, dist and caches.
-Baseline: accepted v0.2.0 main 516027d5a917541ceee76df7cf82d94eeb5792ed.
+Logic Core v0.3.0 — 125 source files; schema 3
+Root snapshot; no wrapper directory.
 
-FILE TREE — paths relative to repository root
 .github/workflows/deploy.yml
 .github/workflows/mobile-release.yml
 .gitignore
@@ -10,6 +8,8 @@ README.md
 docs/DECISION_ENGINE.md
 docs/FILE_TREE.txt
 docs/FOUNDATION_LOCK.md
+docs/OPPORTUNITY_BRIDGE.md
+docs/OPPORTUNITY_INTELLIGENCE.md
 docs/POLISH_FLOW.md
 docs/VALIDATION.md
 index.html
@@ -21,6 +21,7 @@ public/icons/icon-192.png
 public/icons/icon-512.png
 public/icons/maskable-512.png
 public/manifest.webmanifest
+public/opportunity-bridge-example.json
 scripts/build-pwa.mjs
 scripts/config.mjs
 scripts/generate-mobile-workflow.py
@@ -31,7 +32,9 @@ scripts/sw-template.js
 scripts/verify-build.mjs
 src/app/App.tsx
 src/app/AppShell.tsx
+src/app/navigation-guard.ts
 src/app/pending-work.ts
+src/app/route-heading.ts
 src/app/router.ts
 src/app/useDevice.ts
 src/app/useNow.ts
@@ -41,17 +44,27 @@ src/components/DataTools.tsx
 src/components/ErrorBoundary.tsx
 src/components/ExportButton.tsx
 src/components/Icon.tsx
+src/components/OpportunityBridge.tsx
 src/components/PageHeader.tsx
 src/components/ProjectCard.tsx
+src/components/RelatedWork.tsx
 src/components/UpdateNotice.tsx
+src/components/decisions/DecisionDrift.tsx
 src/components/decisions/DecisionField.tsx
 src/components/decisions/DecisionHistory.tsx
 src/components/decisions/DecisionOptions.tsx
 src/components/decisions/DecisionReview.tsx
 src/components/decisions/DecisionScoring.tsx
+src/components/opportunities/OpportunityEvaluation.tsx
+src/components/opportunities/OpportunityLinks.tsx
+src/components/opportunities/OpportunitySource.tsx
 src/config.ts
+src/domain/attention.ts
 src/domain/decision-actions.ts
+src/domain/decision-intelligence.ts
 src/domain/decisions.ts
+src/domain/opportunities.ts
+src/domain/opportunity-intelligence.ts
 src/domain/types.ts
 src/domain/workspace.ts
 src/env.d.ts
@@ -61,6 +74,9 @@ src/pages/DecisionEditorPage.tsx
 src/pages/DecisionsPage.tsx
 src/pages/DiagnosticsPage.tsx
 src/pages/MorePage.tsx
+src/pages/OpportunitiesPage.tsx
+src/pages/OpportunityBridgePage.tsx
+src/pages/OpportunityEditorPage.tsx
 src/pages/PlaceholderPage.tsx
 src/pages/ProjectEditorPage.tsx
 src/pages/ProjectsPage.tsx
@@ -71,6 +87,9 @@ src/pwa/update-controller.ts
 src/storage/backup.ts
 src/storage/context.tsx
 src/storage/decision-validation.ts
+src/storage/opportunity-bridge.ts
+src/storage/opportunity-operations.ts
+src/storage/opportunity-validation.ts
 src/storage/recovery.ts
 src/storage/schema.ts
 src/storage/store.ts
@@ -79,6 +98,7 @@ src/styles.css
 src/utils/download.ts
 src/utils/format.ts
 tests/backup.test.ts
+tests/bridge.test.ts
 tests/config.test.ts
 tests/decision-fixtures.ts
 tests/decision-ui.test.ts
@@ -86,9 +106,17 @@ tests/decisions.test.ts
 tests/fixtures/v0.1-backup.json
 tests/fixtures/v0.1-primary.json
 tests/fixtures/v0.2-primary.json
+tests/intelligence.test.ts
 tests/migration.test.ts
+tests/navigation.test.ts
 tests/offline.test.ts
+tests/opportunities.test.ts
+tests/opportunity-backup.test.ts
+tests/opportunity-fixtures.ts
+tests/opportunity-store.test.ts
+tests/opportunity-validation.test.ts
 tests/polish-ui.test.ts
+tests/router-guard.test.ts
 tests/startup.test.ts
 tests/storage.test.ts
 tests/test_release.py
@@ -98,58 +126,3 @@ tests/worker-update.test.ts
 tests/workspace.test.ts
 tsconfig.json
 vite.config.ts
-
-MODIFIED SINCE v0.2.0 (32)
-README.md
-docs/DECISION_ENGINE.md
-docs/FILE_TREE.txt
-docs/FOUNDATION_LOCK.md
-docs/VALIDATION.md
-index.html
-package-lock.json
-package.json
-public/manifest.webmanifest
-scripts/sw-template.js
-src/app/App.tsx
-src/app/AppShell.tsx
-src/app/router.ts
-src/components/DataTools.tsx
-src/components/ErrorBoundary.tsx
-src/components/PageHeader.tsx
-src/components/ProjectCard.tsx
-src/components/decisions/DecisionHistory.tsx
-src/components/decisions/DecisionReview.tsx
-src/components/decisions/DecisionScoring.tsx
-src/main.tsx
-src/pages/CommandPage.tsx
-src/pages/DecisionEditorPage.tsx
-src/pages/DecisionsPage.tsx
-src/pages/DiagnosticsPage.tsx
-src/pages/MorePage.tsx
-src/pages/PlaceholderPage.tsx
-src/pages/ProjectEditorPage.tsx
-src/pages/ProjectsPage.tsx
-src/pages/SettingsPage.tsx
-src/pwa/register.ts
-src/styles.css
-
-ADDED SINCE v0.2.0 (15)
-docs/POLISH_FLOW.md
-src/app/pending-work.ts
-src/app/useUnsavedWork.ts
-src/components/ActivityRow.tsx
-src/components/UpdateNotice.tsx
-src/domain/decision-actions.ts
-src/domain/workspace.ts
-src/pwa/update-controller.ts
-tests/fixtures/v0.2-primary.json
-tests/polish-ui.test.ts
-tests/startup.test.ts
-tests/update-controller.test.ts
-tests/upgrade-v021.test.ts
-tests/worker-update.test.ts
-tests/workspace.test.ts
-
-Protected workflows, controller/generator/template, package-release.py, data layer,
-existing tests, storage key, install identity and dependencies remain unchanged.
-PWA lifecycle changes: index guard, registration/controller and sw-template.js.

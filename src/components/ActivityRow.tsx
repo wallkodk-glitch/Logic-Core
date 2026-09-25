@@ -4,7 +4,7 @@ import type { ActivityTarget } from '../domain/workspace.ts';
 import { formatTime } from '../utils/format.ts';
 import { Icon } from './Icon.tsx';
 
-const labels = { COMMAND: 'Command', PROJECT: 'Project', DECISION: 'Decision' };
+const labels = { COMMAND: 'Command', PROJECT: 'Project', DECISION: 'Decision', OPPORTUNITY: 'Opportunity' };
 export function ActivityRow({ event, target }: { event: Activity; target: ActivityTarget }) {
   const [expanded, setExpanded] = useState(false);
   const textId = useId();

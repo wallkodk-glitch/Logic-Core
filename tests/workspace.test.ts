@@ -62,11 +62,11 @@ test('recent workspace excludes archived/closed items and never reads deleted ac
   const data: AppData = { ...store.getSnapshot().data, projects: [{ ...project('archive'), status: 'archived' }], activity: [event('project.deleted', { projectId: 'ghost' })] };
   assert.deepEqual(recentWorkspace(data), []);
 });
-test('derived workspace and activity helpers never mutate schema 2 records', () => {
+test('derived workspace and activity helpers never mutate migrated records', () => {
   const { store, port } = fixture(); create(store);
   const data = store.getSnapshot().data; const before = [...port.items];
   recentWorkspace(data); activityTarget(data.activity[0]!, data);
-  assert.deepEqual([...port.items], before); assert.equal(SCHEMA_VERSION, 2);
+  assert.deepEqual([...port.items], before); assert.equal(SCHEMA_VERSION, 3);
 });
 test('decide visibility follows the existing validator; optional scoring and incomplete drafts retain their semantics', () => {
   const input = completeInput(); assert(canDecide(input));

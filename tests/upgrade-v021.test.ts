@@ -13,14 +13,14 @@ function existing() {
   const port = new MemoryStorage(); port.items.set(key, raw);
   return { port, store: new AppStore(() => port, key) };
 }
-test('v0.2.0 schema 2 opens in v0.2.1 without migration or any primary write', () => {
-  const { port, store } = existing(); assert.equal(SCHEMA_VERSION, 2);
+test('accepted v0.2 schema 2 upgrades once then reopens without additional primary writes', () => {
+  const { port, store } = existing(); assert.equal(SCHEMA_VERSION, 3);
   assert.equal(store.getSnapshot().error, null); assert.deepEqual(store.getSnapshot().data, data);
-  assert.equal(port.getItem(key), raw); assert.equal(port.writes, 0);
-  store.refresh(); assert.equal(port.writes, 0); assert.equal(port.getItem(key), raw);
+  const upgraded = JSON.stringify(data); assert.equal(port.getItem(key), upgraded); assert.equal(port.writes, 1);
+  store.refresh(); assert.equal(port.writes, 1); assert.equal(port.getItem(key), upgraded);
   assert(data.projects.length && data.activity.length && data.decisions[0]!.commits.length && data.decisions[0]!.reviews.length);
 });
-test('v0.2 records, history, scores and project links survive backup/recovery in v0.2.1', () => {
+test('v0.2 records, history, scores and project links survive backup/recovery in v0.3', () => {
   const { port, store } = existing(); const backup = ok(store.exportData('0.2.1'));
   assert.deepEqual(parseBackup(backup).data, data);
   ok(store.addCommand('After the update')); const beforeRestore = port.getItem(key);
@@ -31,7 +31,7 @@ test('v0.2 records, history, scores and project links survive backup/recovery in
   assert.deepEqual(store.getSnapshot().data, parseData(beforeRestore));
 });
 test('a stale app seeing newer schema stays recoverable and preserves raw primary and recovery', () => {
-  const port = new MemoryStorage(); const future = JSON.stringify({ ...data, schemaVersion: 3 });
+  const port = new MemoryStorage(); const future = JSON.stringify({ ...data, schemaVersion: 4 });
   const recovery = JSON.stringify({ recoveryVersion: 1, snapshot: { rawPrimary: raw, savedAt: '2026-09-20T00:00:00.000Z', appVersion: '0.2.0' } });
   port.items.set(key, future); port.items.set(`${key}:recovery`, recovery);
   const store = new AppStore(() => port, key);
@@ -41,5 +41,5 @@ test('a stale app seeing newer schema stays recoverable and preserves raw primar
   assert(ok(store.exportData('0.2.1')).includes(JSON.stringify(future).slice(1, -1)));
   // The current app can recover naturally when a compatible document is available.
   port.items.set(key, raw); store.refresh(); assert.equal(store.getSnapshot().error, null);
-  assert.deepEqual(store.getSnapshot().data, data); assert.equal(port.writes, 0);
+  assert.deepEqual(store.getSnapshot().data, data); assert.equal(port.writes, 1);
 });

@@ -11,6 +11,8 @@ import { key, MemoryStorage, fixture, ok, withScores } from './decision-fixtures
 import { activityTarget } from '../src/domain/workspace.ts';
 import type { Page } from '../src/app/router.ts';
 import type { PwaState } from '../src/pwa/register.ts';
+import { bridge } from './opportunity-fixtures.ts';
+import { focusRouteHeading } from '../src/app/route-heading.ts';
 
 // Actual React components; only browser/context adapters are replaced for SSR.
 // These assertions inspect semantics and markup, NOT pixel layout or touch.
@@ -22,7 +24,7 @@ Reflect.set(globalThis, slot, state);
 const hooks = registerHooks({
   load(url, context, nextLoad) {
     let source: string | undefined;
-    if (url.endsWith('/src/config.ts')) source = 'export const APP_VERSION="0.2.1", BASE_URL="/Logic-Core/", STORAGE_KEY="logic-core:/Logic-Core/:data";';
+    if (url.endsWith('/src/config.ts')) source = 'export const APP_VERSION="0.3.0", BASE_URL="/Logic-Core/", STORAGE_KEY="logic-core:/Logic-Core/:data";';
     if (url.endsWith('/src/storage/context.tsx')) source = 'export const useStore=()=>globalThis[Symbol.for("logic-core-polish-test")].context;';
     if (url.endsWith('/src/pwa/register.ts')) source = 'export const usePwa=()=>globalThis[Symbol.for("logic-core-polish-test")].pwa; export const activateUpdate=()=>{};';
     if (url.endsWith('/src/app/useDevice.ts')) source = 'export const useOnline=()=>true, useKeyboard=()=>false, isStandalone=()=>false;';
@@ -43,6 +45,11 @@ const { MorePage } = await import('../src/pages/MorePage.tsx');
 const { SettingsPage } = await import('../src/pages/SettingsPage.tsx');
 const { DiagnosticsPage } = await import('../src/pages/DiagnosticsPage.tsx');
 const { ActivityRow } = await import('../src/components/ActivityRow.tsx');
+const { OpportunitiesPage } = await import('../src/pages/OpportunitiesPage.tsx');
+const { OpportunityEditorPage } = await import('../src/pages/OpportunityEditorPage.tsx');
+const { OpportunityBridgePage } = await import('../src/pages/OpportunityBridgePage.tsx');
+const { OpportunitySource } = await import('../src/components/opportunities/OpportunitySource.tsx');
+const { App } = await import('../src/app/App.tsx');
 after(() => { hooks.deregister(); Reflect.deleteProperty(globalThis, slot); });
 
 function seed() {
@@ -59,6 +66,9 @@ const screens: [string, Page, () => ReactElement][] = [
   ['More', 'more', () => createElement(MorePage)],
   ['Settings', 'settings', () => createElement(SettingsPage)],
   ['Diagnostics', 'diagnostics', () => createElement(DiagnosticsPage)],
+  ['Opportunities list', 'opportunities', () => createElement(OpportunitiesPage)],
+  ['Opportunity editor', 'opportunity', () => createElement(OpportunityEditorPage, { id: 'new' })],
+  ['Opportunity bridge', 'opportunity-import', () => createElement(OpportunityBridgePage)],
 ];
 for (const [label, page, content] of screens) test(`${label} renders one quiet heading and existing mobile navigation`, () => {
   seed(); const html = shell(page, content());
@@ -100,7 +110,7 @@ test('decided editor remains read-only with history/review and without draft act
   assert.match(html, /Genåbn som kladde/); assert.match(html, /Bevar historikken/);
 });
 test('newer schema warning renders with Diagnostics guidance rather than a frozen startup screen', () => {
-  const port = new MemoryStorage(); const raw = JSON.stringify({ schemaVersion: 3 }); port.items.set(key, raw);
+  const port = new MemoryStorage(); const raw = JSON.stringify({ schemaVersion: 4 }); port.items.set(key, raw);
   activeStore = new AppStore(() => port, key); const html = shell('command', createElement(CommandPage));
   assert.match(html, /role="alert"/); assert.match(html, /nyere Logic Core/); assert.match(html, /Opdatér appen/);
   assert.match(html, /href="#\/diagnostics"/); assert.doesNotMatch(html, /Starter Logic Core/);
@@ -112,4 +122,42 @@ test('explicit update notice and temporary interaction lock are separate from no
   state.pwa = { ...state.pwa, activation: { phase: 'requesting', detail: 'Aktiverer opdateringen…' } };
   html = shell('command', createElement(CommandPage)); assert.match(html, /<main inert=""/); assert.match(html, /<nav inert=""/); assert.match(html, /class="update-lock" role="status"/);
   state.pwa = { status: 'ready', detail: '', activation: { phase: 'idle', detail: '' } };
+});
+
+test('startup shell plus React application scopes route title and focus to main heading', () => {
+  seed(); const app = renderToStaticMarkup(createElement(App));
+  const html = readFileSync('index.html', 'utf8').replace('<div id="root"></div>', `<div id="root">${app}</div>`);
+  assert.match(html, /<h1 id="startup-title"[^>]*>Logic Core<\/h1>/); assert.match(app, /id="main-content"/);
+  const startup = { textContent: 'Logic Core', focus: () => { throw new Error('Hidden startup heading must never receive focus'); } };
+  let focused = false;
+  const title = /<main\b[^>]*>[\s\S]*?<h1\b[^>]*>([^<]+)<\/h1>/.exec(app)?.[1]; assert.equal(title, 'Dit overblik');
+  const heading = { textContent: title, focus: (options: FocusOptions) => { assert.deepEqual(options, { preventScroll: true }); focused = true; } };
+  // DOM port exposes the two real rendered headings in document order. A global
+  // h1 selector reproduces the accepted baseline bug and fails this assertion.
+  const doc = { title: '', querySelector: (selector: string) => selector === '#main-content h1' ? heading : startup };
+  focusRouteHeading(doc as unknown as Pick<Document, 'title' | 'querySelector'>);
+  assert.equal(doc.title, 'Dit overblik · Logic Core'); assert.equal(focused, true);
+});
+test('imported source renders as escaped plain text with passive safe links and no controls', () => {
+  activeStore = fixture().store; const doc = bridge(); doc.items[0]!.analysis.summary = '<script>window.bad=true</script> **plain**';
+  ok(activeStore.importBridge(ok(activeStore.prepareBridge(JSON.stringify(doc))), true));
+  const snapshot = activeStore.getSnapshot().data.opportunities[0]!.sourceSnapshots[0]!;
+  const html = renderToStaticMarkup(createElement(OpportunitySource, { snapshot }));
+  assert.match(html, /&lt;script&gt;/); assert.doesNotMatch(html, /<script|<iframe|<img|<input|<textarea/);
+  assert.match(html, /rel="noopener noreferrer"/); assert.match(html, /referrerPolicy="no-referrer"/); assert.match(html, /AI \/ importeret kilde/);
+});
+test('Opportunity detail exposes local workspace, source history and manual draft action', () => {
+  activeStore = fixture().store; ok(activeStore.importBridge(ok(activeStore.prepareBridge(JSON.stringify(bridge()))), true));
+  const o = activeStore.getSnapshot().data.opportunities[0]!;
+  const html = shell('opportunity', createElement(OpportunityEditorPage, { id: o.id }));
+  for (const label of ['Gem mulighed', 'Lokal vurdering', 'Seneste kildeanalyse', 'Kildehistorik', 'Start beslutning']) assert(html.includes(label));
+  assert.equal((html.match(/>Gem mulighed<\/button>/g) ?? []).length, 1); assert.doesNotMatch(html, /<table/);
+  assert.equal(activeStore.getSnapshot().data.decisions.length, 0);
+});
+test('Opportunity activity classification and deleted history render without broken links', () => {
+  activeStore = fixture().store; ok(activeStore.importBridge(ok(activeStore.prepareBridge(JSON.stringify(bridge()))), true));
+  const data = activeStore.getSnapshot().data; const event = data.activity[0]!;
+  const render = (opportunities = data.opportunities) => renderToStaticMarkup(createElement(ActivityRow, { event, target: activityTarget(event, { ...data, opportunities }) }));
+  assert.match(render(), /Opportunity ·/); assert.match(render(), /href="#\/opportunities\//);
+  assert.doesNotMatch(render([]), /href=|<button/); assert.match(render([]), /Ikke længere tilgængelig/);
 });
